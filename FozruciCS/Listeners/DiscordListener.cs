@@ -1,7 +1,7 @@
 using System;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using Common.Logging;
 using DSharpPlus;
 using DSharpPlus.Entities;
@@ -14,8 +14,10 @@ using LogLevel = DSharpPlus.LogLevel;
 namespace FozruciCS.Listeners{
 	public class DiscordListener : IListener{
 		private static readonly ILog Logger = LogManager.GetLogger<DiscordListener>();
+		public static Timer titanusTimer = new Timer{Interval = 10 * 1000, AutoReset = true, Enabled = true};
 		private readonly DiscordClient _client;
-		public Configuration Config=>Program.Config;
+
+		public bool titanusDown;
 
 		public DiscordListener(){
 			_client = Config.DiscordSocketClient = new DiscordClient(new DiscordConfiguration{
@@ -48,29 +50,75 @@ namespace FozruciCS.Listeners{
 			_client.ClientErrored += OnClientError;
 			_client.SocketErrored += OnSocketError;
 			AppDomain.CurrentDomain.ProcessExit += ExitHandler;
-			Task.Run(async () =>{
-				try{ await _client.ConnectAsync(); } catch(Exception e){
-					Logger.Error(e);
-				}
+			Task.Run(async ()=>{
+				try{ await _client.ConnectAsync(); } catch(Exception e){ Logger.Error(e); }
 			});
+			titanusTimer.Elapsed += async (sender, args)=>{
+				DiscordGuild guild = _client.Guilds[215943758527594496];
+				DiscordMember titanus = await guild.GetMemberAsync(376087025234870272);
+				if((titanus.Presence.Status == UserStatus.Offline) &&
+				   !titanusDown){
+					await guild?.GetChannel(215943758527594496)?.SendMessageAsync("<@206237974105554944> Titanus is down");
+					titanusDown = true;
+				} else{ titanusDown = false; }
+			};
 		}
+		public static Configuration Config=>Program.Config;
+
+		public async void ExitHandler(object sender, EventArgs args){await _client.DisconnectAsync();}
 
 		public async Task<bool> CommandHandler(MessageCreateEventArgs e){
 			if(e.Author == e.Client.CurrentUser){ return false; }
-			LinkedDiscordChannel channel = e.Channel;
 
-			string[] args = e.Message.Content.Split(' ');
-			if(args[0].StartsWith(e.Client.CurrentUser.Mention)      ||
-			   args[0].StartsWith(e.Guild.CurrentMember.DisplayName) ||
-			   args[0].StartsWith(e.Client.CurrentUser.Username)){
-				string command;
-				if(Program.Commands.ContainsCommand(command = args[1].ToLower())){
-					ArraySegment<string> segment = new ArraySegment<string>(args, 2, args.Length - 2);
-					try{
-						await Program.Commands[command].HandleCommand(this, (LinkedDiscordChannel)e.Channel, segment, (LinkedDiscordMessage)e);
-					} catch(Exception ex){
+			string message = e.Message.Content;
+			string[] args = message.Split(' ');
+			IRespondable respondTo;
+			if(e.Channel != null){ respondTo = (LinkedDiscordChannel)e.Channel; } else{ respondTo = (LinkedDiscordUser)e.Author; }
+
+			bool commandByName = args[0].StartsWith(e.Client.CurrentUser.Mention)      ||
+								 args[0].StartsWith(e.Guild.CurrentMember.DisplayName) ||
+								 args[0].StartsWith(e.Client.CurrentUser.Username);
+			bool commandByPrefix = message.StartsWithAny(Config.CommandPrefixes);
+			if(commandByName || commandByPrefix){
+				string command = null;
+				int offset = 1;
+				if(commandByName){
+					if(args.Length < 2){ return false; }
+
+					command = args[1];
+					offset = 2;
+				}
+
+				if(commandByPrefix){
+					foreach(string prefix in Config.CommandPrefixes){
+						if(message.StartsWith(prefix)){
+							if(prefix.EndsWith(" ")){
+								if(args.Length < 2){ return false; }
+
+								command = args[1];
+								offset = 2;
+								break;
+							}
+
+							command = args[0].Substring(prefix.Length);
+							break;
+						}
+					}
+				}
+
+				if(command == null){ return false; }
+
+				if(Program.Commands.ContainsCommand(command)){
+					LinkedDiscordMessage linkedMessage = e;
+					if(!LilGUtil.CheckPermission(command, linkedMessage.server, linkedMessage.channel, linkedMessage.author)){
+						await respondTo.respond($"Sorry, you don't have the permission to run {command}");
+						return true;
+					}
+
+					ArraySegment<string> segment = new ArraySegment<string>(args, offset, args.Length - offset);
+					try{ await Program.Commands[command].HandleCommand(this, respondTo, segment, (LinkedDiscordMessage)e); } catch(Exception ex){
 						Logger.Error($"Problem processing command: \n{ex}");
-						await channel.respond($"Sorry there was a problem processing the command: {ex.Message}");
+						await respondTo.respond($"Sorry there was a problem processing the command: {ex.Message}");
 						return false;
 					}
 
@@ -84,24 +132,16 @@ namespace FozruciCS.Listeners{
 		private async Task OnNewMessage(MessageCreateEventArgs e){
 			StringBuilder builder = new StringBuilder();
 			foreach(DiscordAttachment result in e.Message.Attachments){
-				if(builder.Length != 0){
-					builder.Append(", ");
-				}
+				if(builder.Length != 0){ builder.Append(", "); }
 
 				builder.Append(result.Url);
 			}
+
 			bool isCommand = await CommandHandler(e);
 			Logger.InfoFormat($"{(isCommand ? "Command" : "Message")} from ({e.Guild.Name}) #{e.Channel.Name} by {e.Author.GetHostMask()}: {e.Message.Content} {builder}");
 		}
 
-		private async Task OnClientOnReady(ReadyEventArgs args){
-			Logger.Info("Discord listener is now ready");
-		}
-
-		public async void ExitHandler(object sender, EventArgs args){
-			await _client.DisconnectAsync();
-
-		}
+		private async Task OnClientOnReady(ReadyEventArgs args)=>Logger.Info("Discord listener is now ready");
 
 		private async Task OnClientError(ClientErrorEventArgs e){
 			Logger.Error(e.EventName, e.Exception);

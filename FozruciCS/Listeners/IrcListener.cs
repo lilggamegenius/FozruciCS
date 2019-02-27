@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using ChatSharp;
 using ChatSharp.Events;
 using Common.Logging;
+using FozruciCS.Commands;
 using FozruciCS.Config;
 using FozruciCS.Links;
 using FozruciCS.Utils;
@@ -12,9 +11,9 @@ using FozruciCS.Utils;
 namespace FozruciCS.Listeners{
 	public class IrcListener : IListener{
 		private static readonly ILog Logger = LogManager.GetLogger<IrcListener>();
+		public Configuration.ServerConfiguration Config;
 		public IrcClient IrcClient;
 		public IrcUser IrcSelf;
-		public Configuration.ServerConfiguration Config;
 		public IrcListener(Configuration.ServerConfiguration configServer){
 			Config = configServer;
 			IrcSelf = Config.IrcSelf = new IrcUser(null, Config.NickName, Config.UserName, Config.serverPassword, Config.RealName);
@@ -31,29 +30,36 @@ namespace FozruciCS.Listeners{
 			AppDomain.CurrentDomain.ProcessExit += ExitHandler;
 		}
 
+		public void ExitHandler(object sender, EventArgs args){IrcClient.Quit("Shutting down");}
+
 		public async Task<bool> CommandHandler(PrivateMessageEventArgs e){
 			if(e.PrivateMessage.User.Hostmask == IrcSelf.Hostmask){ return false; }
 
-			string message = e.PrivateMessage.Message.ToLower();
+			string message = e.PrivateMessage.Message;
+			string messageLower = message.ToLower();
 			string[] args = message.Split(' ');
-			LinkedIrcChannel channel = e.PrivateMessage.Channel;
+			IRespondable respondTo;
+			if(e.PrivateMessage.IsChannelMessage){ respondTo = (LinkedIrcChannel)e.PrivateMessage.Channel; } else{ respondTo = (LinkedIrcUser)e.PrivateMessage.User; }
+
 			string first = args[0].ToLower();
 			bool commandByName = first.StartsWith(IrcSelf.Nick.ToLower());
-			bool commandByPrefix = message.StartsWithAny(Config.CommandPrefixes);
+			bool commandByPrefix = messageLower.StartsWithAny(Config.CommandPrefixes);
 			if(commandByName || commandByPrefix){
 				string command = null;
 				int offset = 1;
 				if(commandByName){
-					if(args.Length < 2) return false;
+					if(args.Length < 2){ return false; }
+
 					command = args[1];
 					offset = 2;
 				}
 
 				if(commandByPrefix){
 					foreach(string prefix in Config.CommandPrefixes){
-						if(message.StartsWith(prefix)){
+						if(messageLower.StartsWith(prefix)){
 							if(prefix.EndsWith(" ")){
-								if(args.Length < 2) return false;
+								if(args.Length < 2){ return false; }
+
 								command = args[1];
 								offset = 2;
 								break;
@@ -65,14 +71,20 @@ namespace FozruciCS.Listeners{
 					}
 				}
 
-				if(command == null) return false;
+				if(command == null){ return false; }
+
 				if(Program.Commands.ContainsCommand(command)){
+					LinkedIrcMessage linkedMessage = e;
+					if(!LilGUtil.CheckPermission(command, linkedMessage.server, linkedMessage.channel, linkedMessage.author)){
+						await respondTo.respond($"Sorry, you don't have the permission to run {command}");
+						return true;
+					}
+
+					ICommand icommand = Program.Commands[command];
 					ArraySegment<string> segment = new ArraySegment<string>(args, offset, args.Length - offset);
-					try{
-						await Program.Commands[command].HandleCommand(this, channel, segment, (LinkedIrcMessage)e);
-					} catch(Exception ex){
+					try{ await icommand.HandleCommand(this, respondTo, segment, (LinkedIrcMessage)e); } catch(Exception ex){
 						Logger.Error($"Problem processing command: \n{ex}");
-						await channel.respond($"Sorry there was a problem processing the command: {ex.Message}");
+						await respondTo.respond($"Sorry there was a problem processing the command: {ex.Message}");
 						return false;
 					}
 
@@ -83,12 +95,11 @@ namespace FozruciCS.Listeners{
 			return false;
 		}
 		private async void OnChannelMessageRecieved(PrivateMessageEventArgs e){
-			IrcChannel source = IrcClient.Channels[e.PrivateMessage.Source];
 			bool isCommand = await CommandHandler(e);
 			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.Source} by {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
 		}
 
-		private void OnPrivateMessageRecieved(object sender, PrivateMessageEventArgs e){
+		private async void OnPrivateMessageRecieved(object sender, PrivateMessageEventArgs e){
 			if(e.PrivateMessage.Message.IsCtcp()){
 				OnCtcpMessageRecieved(e);
 				return;
@@ -99,7 +110,8 @@ namespace FozruciCS.Listeners{
 				return;
 			}
 
-			Logger.InfoFormat("Message from {0}: {1}", e.PrivateMessage.User.Hostmask, e.PrivateMessage.Message);
+			bool isCommand = await CommandHandler(e);
+			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
 		}
 
 		private void OnCtcpMessageRecieved(PrivateMessageEventArgs e){
@@ -122,7 +134,7 @@ namespace FozruciCS.Listeners{
 					IrcClient.SendNotice($"{command} ".ToCtcp(), e.PrivateMessage.Source);
 					break;
 				case nameof(CtcpCommands.SOURCE):
-					IrcClient.SendNotice($"{command} dIRCord - https://github.com/lilggamegenius/dIRCord".ToCtcp(), e.PrivateMessage.Source);
+					IrcClient.SendNotice($"{command} FozruciCS - https://github.com/lilggamegenius/FozruciCS".ToCtcp(), e.PrivateMessage.Source);
 					break;
 				case nameof(CtcpCommands.TIME):
 					IrcClient.SendNotice($"{command} ".ToCtcp(), e.PrivateMessage.Source);
@@ -150,11 +162,10 @@ namespace FozruciCS.Listeners{
 					string[] channelValues = channel.Split(new[]{' '}, 1);
 					IrcClient.JoinChannel(channelValues[0]);
 				}
+
 				IrcClient.SendRawMessage("ns identify {0} {1}", Config.nickservAccountName, Config.nickservPassword);
 			});
 		}
-
-		public void ExitHandler(object sender, EventArgs args){IrcClient.Quit("Shutting down");}
 
 		private void OnError(object sender, ErrorEventArgs e){Logger.Error(e.Error.Message, e.Error);}
 

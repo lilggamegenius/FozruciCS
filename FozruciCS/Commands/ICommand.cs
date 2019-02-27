@@ -1,18 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using ChatSharp;
-using ChatSharp.Events;
-using DSharpPlus.Entities;
-using DSharpPlus.EventArgs;
+using DSharpPlus;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
 
 namespace FozruciCS.Commands{
 	public interface ICommand{
-		Task HandleCommand(IListener listener, LinkedChannel channel, IList<string> args, LinkedMessage e);
-		Task Help(IListener listener, LinkedChannel channel, IList<string> args, LinkedMessage e);
-
-
+		Task HandleCommand(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e);
+		Task Help(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e);
 	}
 
 	public class Commands{
@@ -26,4 +22,21 @@ namespace FozruciCS.Commands{
 
 		public bool ContainsCommand(string command)=>commands.ContainsKey(command.ToLower());
 	}
+
+	[AttributeUsage(AttributeTargets.Class)]
+	public class PermissionLevel : Attribute{
+		public PermissionLevel(){
+			minLevel = Modes.None;
+			requiredPermission = Permissions.None;
+		}
+
+		public PermissionLevel(Modes minLevel){
+			this.minLevel = minLevel;
+			requiredPermission = Permissions.None;
+		}
+		public Modes minLevel{get;}
+		public Permissions requiredPermission{get;}
+	}
+
+	public enum Modes{ None, Voice, Halfop, Op, SuperOp, Owner, BotOwner }
 }

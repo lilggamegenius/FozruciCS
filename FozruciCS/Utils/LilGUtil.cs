@@ -6,6 +6,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Common.Logging;
+using DSharpPlus;
+using FozruciCS.Commands;
+using FozruciCS.Links;
+using PermissionLevel = FozruciCS.Commands.PermissionLevel;
 
 namespace FozruciCS.Utils{
 	public static class LilGUtil{
@@ -32,6 +36,15 @@ namespace FozruciCS.Utils{
 		public static int RandInt(int min, int max)=>Rand.Next((max - min) + 1) + min;
 
 		public static double RandDec(double min, double max)=>(Rand.NextDouble() * (max - min)) + min;
+
+		public static T Clamp<T>(this T val, T min, T max)
+			where T:IComparable<T>{
+			if(val.CompareTo(min) < 0){ return min; }
+
+			if(val.CompareTo(max) > 0){ return max; }
+
+			return val;
+		}
 
 		public static string GetBytes(this string byteStr){
 			char[] bytes = byteStr.ToCharArray();
@@ -64,11 +77,54 @@ namespace FozruciCS.Utils{
 			return 0;
 		}
 
-		/*public static Unsafe getUnsafe(){
-			return Unsafe.getUnsafe();
-		}*/
+		public static bool CheckPermission(string commandName, LinkedServer server, LinkedChannel channel, LinkedUser user){
+			if(user.isIrc){
+				LinkedIrcUser ircUser = (LinkedIrcUser)user;
+				if(ircUser.IrcUser.Match(Program.Config.servers[server.name].botOwnerHostmask)){ return true; }
+			} else if(user.isDiscord){
+				if(user.id.Equals(Program.Config.DiscordBotOwnerID.ToString())){ return true; }
+			}
 
-		public static long SizeOf(object obj)=>-1;
+			// end owner checks
+			ICommand command = Program.Commands[commandName]; // Get required permission level
+			PermissionLevel permission = (PermissionLevel)Attribute.GetCustomAttribute(command.GetType(), typeof(PermissionLevel));
+			if(permission == null){ Logger.Warn($"Command \"{commandName}\" does not have a valid permission set on the class"); }
+
+			if(Program.Permissions.TryGetValue(server.name, out Dictionary<string, Dictionary<string, PermissionLevel>> channels)){
+				string check = channel == null ? "PM" : channel.name;
+				if(channels.TryGetValue(check, out Dictionary<string, PermissionLevel> commands)){ commands.TryGetValue(commandName, out permission); }
+			}
+
+			// Check permissions
+			if(permission == null){
+				Logger.Warn($"Disallowing use of command \"{commandName}\" because no permission is set");
+				return false; // Prevent accidentally allowing dangerous commands to be ran by normal users
+			}
+
+			if(permission.minLevel == Modes.BotOwner){ return false; }
+
+			if(user.isIrc){
+				if(permission.minLevel == Modes.None){ return true; }
+
+				if(channel == null){ return false; }
+
+				LinkedIrcChannel ircChannel = (LinkedIrcChannel)channel;
+				LinkedIrcUser ircUser = (LinkedIrcUser)user;
+				return ircChannel.channel.UsersByMode[IrcUtils.GetUserLevelChar(permission.minLevel)].Contains(ircUser);
+			}
+
+			if(user.isDiscord){
+				if(permission.requiredPermission == Permissions.None){ return true; }
+
+				LinkedDiscordUser discordUser = (LinkedDiscordUser)user;
+				if(channel == null){ return false; }
+
+				LinkedDiscordChannel discordChannel = (LinkedDiscordChannel)channel;
+				return discordUser.DiscordMember.PermissionsIn(discordChannel).HasFlag(permission.requiredPermission);
+			}
+
+			return false;
+		}
 
 		public static string[] SplitMessage(this string stringToSplit, int amountToSplit = 0, bool removeQuotes = true){
 			if(stringToSplit == null){ return new string[0]; }

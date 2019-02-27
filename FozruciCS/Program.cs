@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows.Forms;
+using System.Threading;
 using Common.Logging;
-using DSharpPlus.Entities;
 using FozruciCS.Commands;
 using FozruciCS.Config;
 using FozruciCS.Listeners;
 using Newtonsoft.Json;
+using Timer = System.Timers.Timer;
 
 namespace FozruciCS{
 	internal class Program{
@@ -22,8 +22,11 @@ namespace FozruciCS{
 		private static readonly ILog Logger = LogManager.GetLogger<Program>();
 		private static readonly JsonSerializer Serializer = new JsonSerializer();
 		private static FileInfo _configFile;
+		private static FileInfo _permissionsFile;
 		public static Configuration Config;
-		public static long CurrentTimeMillis=>DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+		public static Dictionary<string, Dictionary<string, Dictionary<string, PermissionLevel>>> Permissions =
+			new Dictionary<string, Dictionary<string, Dictionary<string, PermissionLevel>>>();
+		public static Timer saveTimer = new Timer{Interval = 5 * 1000, AutoReset = true, Enabled = true};
 
 		static Program(){
 			Commands = new Commands.Commands();
@@ -34,28 +37,52 @@ namespace FozruciCS{
 				RuntimeHelpers.RunClassConstructor(command.TypeHandle);
 				Logger.InfoFormat("Loaded command {0} as {1}", command.Name, command.FullName);
 			}
+
+			saveTimer.Elapsed += (sender, args)=>{
+				using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(_permissionsFile.Open(FileMode.Create)))){ Serializer.Serialize(textWriter, Permissions); }
+			};
 		}
+		public static long CurrentTimeMillis=>DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
 		public static int Main(string[] args){
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			Logger.Debug($"Current directory is {Directory.GetCurrentDirectory()}");
 			string configFilePath;
-			if(args.Length == 0){
+			string permissionsFilePath;
+			#if DEBUG
+			configFilePath = "Data/debugConfig.json";
+			permissionsFilePath = "Data/debugPermissions.json";
+			#else
 				configFilePath = "Data/config.json";
-			} else{
-				configFilePath = args[0];
-			}
-
+				permissionsFilePath = "Data/permissions.json";
+			#endif
 			_configFile = new FileInfo(configFilePath);
-			Logger.Info("Path = " + _configFile);
+			_permissionsFile = new FileInfo(permissionsFilePath);
+			Logger.Info("Config Path = "      + _configFile);
+			Logger.Info("Permissions Path = " + _permissionsFile);
 			try{
-				if(!_configFile.Exists) throw new FileNotFoundException(configFilePath);
+				if(!_configFile.Exists){ throw new FileNotFoundException(configFilePath); }
+
 				using(StreamReader sr = new StreamReader(_configFile.OpenRead()))
 				using(JsonTextReader reader = new JsonTextReader(sr)){
 					Config = Serializer.Deserialize<Configuration>(reader);
-					Config.DiscordListener = new DiscordListener();
+					Array.Sort(Config.CommandPrefixes, (x, y)=>y.Length.CompareTo(x.Length));
+					new Thread(()=>{Config.DiscordListener = new DiscordListener();}).Start();
 					foreach(string serverKey in Config.servers.Keys){
-						Config.servers[serverKey].IrcListener = new IrcListener(Config.servers[serverKey]);
+						new Thread(()=>{Config.servers[serverKey].IrcListener = new IrcListener(Config.servers[serverKey]);}).Start();
+					}
+				}
+
+				if(!_permissionsFile.Exists){
+					using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(_permissionsFile.Open(FileMode.Create)))){
+						Serializer.Serialize(textWriter, Permissions);
+					}
+				} else{
+					using(StreamReader sr = new StreamReader(_permissionsFile.OpenRead()))
+					using(JsonTextReader reader = new JsonTextReader(sr)){
+						Dictionary<string, Dictionary<string, Dictionary<string, PermissionLevel>>> tempPermissions =
+							Serializer.Deserialize<Dictionary<string, Dictionary<string, Dictionary<string, PermissionLevel>>>>(reader);
+						Permissions = tempPermissions ?? new Dictionary<string, Dictionary<string, Dictionary<string, PermissionLevel>>>();
 					}
 				}
 
@@ -83,9 +110,8 @@ namespace FozruciCS{
 		public static void RegisterCommand(string commandName, ICommand command){Commands[commandName.ToLower()] = command;}
 
 		private static bool handleCommand(string command){
-			if(command.Equals("exit")){
-				return true;
-			}
+			if(command.Equals("exit")){ return true; }
+
 			return false;
 		}
 	}

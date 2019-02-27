@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>FozruciCS</RootNamespace>
     <AssemblyName>FozruciCS</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+      <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -55,7 +55,24 @@
       <HintPath>..\packages\GetOptNet.1.2.0.0\lib\net35-Client\GetOptNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
+      <Reference Include="Microsoft.CodeAnalysis, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+          <HintPath>..\packages\Microsoft.CodeAnalysis.Common.3.0.0-beta2-final\lib\netstandard2.0\Microsoft.CodeAnalysis.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+          <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.3.0.0-beta2-final\lib\netstandard2.0\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="Microsoft.CodeAnalysis.CSharp.Scripting, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+          <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.Scripting.3.0.0-beta2-final\lib\netstandard2.0\Microsoft.CodeAnalysis.CSharp.Scripting.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="Microsoft.CodeAnalysis.Scripting, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+          <HintPath>..\packages\Microsoft.CodeAnalysis.Scripting.Common.3.0.0-beta2-final\lib\netstandard2.0\Microsoft.CodeAnalysis.Scripting.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
     <Reference Include="Microsoft.CSharp" />
+      <Reference Include="mscorlib"/>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -64,8 +81,41 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+      <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+          <HintPath>..\packages\System.Buffers.4.4.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="System.Collections.Immutable, Version=1.2.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>..\packages\System.Collections.Immutable.1.5.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
     <Reference Include="System.Core" />
+      <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+          <HintPath>..\packages\System.Memory.4.5.1\lib\netstandard2.0\System.Memory.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="System.Numerics"/>
+      <Reference Include="System.Numerics.Vectors, Version=4.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>..\packages\System.Numerics.Vectors.4.4.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="System.Reflection.Metadata, Version=1.4.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>..\packages\System.Reflection.Metadata.1.6.0\lib\netstandard2.0\System.Reflection.Metadata.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
     <Reference Include="System.Speech" />
+      <Reference Include="System.Text.Encoding.CodePages, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>..\packages\System.Text.Encoding.CodePages.4.5.0\lib\net461\System.Text.Encoding.CodePages.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+          <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.0\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -73,12 +123,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+      <Compile Include="Commands\HCF.cs"/>
     <Compile Include="Commands\ICommand.cs" />
+      <Compile Include="Commands\Join.cs"/>
     <Compile Include="Commands\Ping.cs" />
+      <Compile Include="Commands\Repl.cs"/>
     <Compile Include="Config\Configuration.cs" />
     <Compile Include="Config\DiscordChannelConfiguration.cs" />
     <Compile Include="Config\IChannelConfiguration.cs" />
     <Compile Include="Config\IRCChannelConfiguration.cs" />
+      <Compile Include="Links\IRespondable.cs"/>
     <Compile Include="Links\LinkedChannel.cs" />
     <Compile Include="Links\LinkedMessage.cs" />
     <Compile Include="Links\LinkedServer.cs" />
@@ -101,10 +155,10 @@
     <Content Include="app.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\config.json">
+      <Content Include="Data\debugConfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\normalConfig.json" />
+      <Content Include="Data\config.json"/>
     <Content Include="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -112,8 +166,12 @@
   <ItemGroup>
     <Folder Include="Forms" />
   </ItemGroup>
+    <ItemGroup>
+        <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.2-beta2\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll"/>
+        <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.2-beta2\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll"/>
+    </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

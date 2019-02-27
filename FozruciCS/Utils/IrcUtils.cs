@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using ChatSharp;
 using Common.Logging;
 using DSharpPlus.Entities;
+using FozruciCS.Commands;
 
 namespace FozruciCS.Utils{
 	public static class IrcUtils{
@@ -38,27 +38,6 @@ namespace FozruciCS.Utils{
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool IsCtcp(this string str)=>str.StartsWith(CtcpChar.ToString()) && str.EndsWith(CtcpChar.ToString());
 
-		public static string SanitizeForIRC(this string str)=>str.Replace(BellChar, SymbolForBellChar)
-																 .Replace(NewLineChar, SymbolForNewLineChar)
-																 .Replace(CharageReturnChar, SymbolForCharageReturnChar);
-
-		public static char GetSymbol(this char mode){
-			switch(mode){
-				case 'q':
-					return '~';
-				case 'a':
-					return '&';
-				case 'o':
-					return '@';
-				case 'h':
-					return '%';
-				case 'v':
-					return '+';
-			}
-
-			return '\0';
-		}
-
 		public static bool Contains(this string str, char ch){
 			if(str == null){ return false; }
 
@@ -69,21 +48,36 @@ namespace FozruciCS.Utils{
 			return false;
 		}
 
-		public static char GetUserLevel(string levels){
-			if(levels.Contains('q')){ return 'q'; }
+		public static Modes GetUserLevel(string levels){
+			if(levels.Contains('q')){ return Modes.Owner; }
 
-			if(levels.Contains('a')){ return 'a'; }
+			if(levels.Contains('a')){ return Modes.SuperOp; }
 
-			if(levels.Contains('o')){ return 'o'; }
+			if(levels.Contains('o')){ return Modes.Op; }
 
-			if(levels.Contains('h')){ return 'h'; }
+			if(levels.Contains('h')){ return Modes.Halfop; }
 
-			if(levels.Contains('v')){ return 'v'; }
+			if(levels.Contains('v')){ return Modes.Voice; }
 
-			return '\0';
+			return Modes.None;
 		}
 
-		public static string GetUserSymbol(IrcUser user)=>GetUserLevel(user.Mode).GetSymbol().ToString();
+		public static char? GetUserLevelChar(Modes mode){
+			switch(mode){
+				case Modes.Voice:
+					return 'v';
+				case Modes.Halfop:
+					return 'h';
+				case Modes.Op:
+					return 'o';
+				case Modes.SuperOp:
+					return 'a';
+				case Modes.Owner:
+					return 'q';
+			}
+
+			return null;
+		}
 
 		public static bool MatchHostMask(this string hostmask, string pattern){
 			string nick = hostmask.Substring(0, hostmask.IndexOf("!", StringComparison.Ordinal));
