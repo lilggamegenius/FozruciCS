@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using ChatSharp;
 using DSharpPlus.Entities;
@@ -31,6 +32,7 @@ namespace FozruciCS.Links{
 						if(messageToSend.Length == 0){ continue; }
 
 						channel.SendMessage($"{(user != null ? $"{user.nick}: " : "")}{messageToSend}");
+						Thread.Sleep(50);
 					}
 				} else{ channel.SendMessage($"{(user != null ? $"{user.nick}: " : "")}{message.Replace('\r', ' ').Replace('\n', ' ')}"); }
 			});

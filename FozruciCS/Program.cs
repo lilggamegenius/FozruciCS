@@ -18,9 +18,9 @@ namespace FozruciCS{
 		private const string KvircFlags = "\u00034\u000F";
 		private const int Attempts = 10;
 		private const int ConnectDelay = 15 * 1000;
-		internal static readonly Commands.Commands Commands;
+		public static readonly JsonSerializer Serializer = new JsonSerializer();
+		internal static readonly CommandList CommandList;
 		private static readonly ILog Logger = LogManager.GetLogger<Program>();
-		private static readonly JsonSerializer Serializer = new JsonSerializer();
 		private static FileInfo _configFile;
 		private static FileInfo _permissionsFile;
 		public static Configuration Config;
@@ -29,7 +29,7 @@ namespace FozruciCS{
 		public static Timer saveTimer = new Timer{Interval = 5 * 1000, AutoReset = true, Enabled = true};
 
 		static Program(){
-			Commands = new Commands.Commands();
+			CommandList = new CommandList();
 			IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
 											   .SelectMany(s=>s.GetTypes())
 											   .Where(p=>typeof(ICommand).IsAssignableFrom(p) && p.IsClass && !p.IsAbstract);
@@ -67,9 +67,15 @@ namespace FozruciCS{
 				using(JsonTextReader reader = new JsonTextReader(sr)){
 					Config = Serializer.Deserialize<Configuration>(reader);
 					Array.Sort(Config.CommandPrefixes, (x, y)=>y.Length.CompareTo(x.Length));
-					new Thread(()=>{Config.DiscordListener = new DiscordListener();}).Start();
+					new Thread(()=>{
+						Config.DiscordListener = new DiscordListener();
+						AppDomain.CurrentDomain.ProcessExit += Config.DiscordListener.ExitHandler;
+					}).Start();
 					foreach(string serverKey in Config.servers.Keys){
-						new Thread(()=>{Config.servers[serverKey].IrcListener = new IrcListener(Config.servers[serverKey]);}).Start();
+						new Thread(()=>{
+							Config.servers[serverKey].IrcListener = new IrcListener(Config.servers[serverKey]);
+							AppDomain.CurrentDomain.ProcessExit += Config.servers[serverKey].IrcListener.ExitHandler;
+						}).Start();
 					}
 				}
 
@@ -107,7 +113,7 @@ namespace FozruciCS{
 			Logger.Fatal($"Unhandled Exception caught: {exception?.Message}\n{exception?.StackTrace}", exception);
 		}
 
-		public static void RegisterCommand(string commandName, ICommand command){Commands[commandName.ToLower()] = command;}
+		public static void RegisterCommand(string commandName, ICommand command){CommandList[commandName.ToLower()] = command;}
 
 		private static bool handleCommand(string command){
 			if(command.Equals("exit")){ return true; }

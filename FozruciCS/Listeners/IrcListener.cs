@@ -27,7 +27,6 @@ namespace FozruciCS.Listeners{
 			//ircClient.ChannelMessageRecieved += onChannelMessageRecieved;
 			IrcClient.Error += OnError;
 			IrcClient.ConnectAsync();
-			AppDomain.CurrentDomain.ProcessExit += ExitHandler;
 		}
 
 		public void ExitHandler(object sender, EventArgs args){IrcClient.Quit("Shutting down");}
@@ -37,7 +36,7 @@ namespace FozruciCS.Listeners{
 
 			string message = e.PrivateMessage.Message;
 			string messageLower = message.ToLower();
-			string[] args = message.Split(' ');
+			string[] args = message.SplitMessage();
 			IRespondable respondTo;
 			if(e.PrivateMessage.IsChannelMessage){ respondTo = (LinkedIrcChannel)e.PrivateMessage.Channel; } else{ respondTo = (LinkedIrcUser)e.PrivateMessage.User; }
 
@@ -73,14 +72,14 @@ namespace FozruciCS.Listeners{
 
 				if(command == null){ return false; }
 
-				if(Program.Commands.ContainsCommand(command)){
+				if(Program.CommandList.ContainsCommand(command)){
 					LinkedIrcMessage linkedMessage = e;
 					if(!LilGUtil.CheckPermission(command, linkedMessage.server, linkedMessage.channel, linkedMessage.author)){
 						await respondTo.respond($"Sorry, you don't have the permission to run {command}");
 						return true;
 					}
 
-					ICommand icommand = Program.Commands[command];
+					ICommand icommand = Program.CommandList[command];
 					ArraySegment<string> segment = new ArraySegment<string>(args, offset, args.Length - offset);
 					try{ await icommand.HandleCommand(this, respondTo, segment, (LinkedIrcMessage)e); } catch(Exception ex){
 						Logger.Error($"Problem processing command: \n{ex}");
@@ -97,6 +96,7 @@ namespace FozruciCS.Listeners{
 		private async void OnChannelMessageRecieved(PrivateMessageEventArgs e){
 			bool isCommand = await CommandHandler(e);
 			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.Source} by {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
+			if(!isCommand){ await Program.CommandList.message(this, (LinkedIrcChannel)e.PrivateMessage.Channel, (LinkedIrcMessage)e); }
 		}
 
 		private async void OnPrivateMessageRecieved(object sender, PrivateMessageEventArgs e){

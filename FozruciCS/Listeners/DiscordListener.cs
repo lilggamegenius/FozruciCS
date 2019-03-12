@@ -49,7 +49,6 @@ namespace FozruciCS.Listeners{
 			_client.Ready += OnClientOnReady;
 			_client.ClientErrored += OnClientError;
 			_client.SocketErrored += OnSocketError;
-			AppDomain.CurrentDomain.ProcessExit += ExitHandler;
 			Task.Run(async ()=>{
 				try{ await _client.ConnectAsync(); } catch(Exception e){ Logger.Error(e); }
 			});
@@ -108,7 +107,7 @@ namespace FozruciCS.Listeners{
 
 				if(command == null){ return false; }
 
-				if(Program.Commands.ContainsCommand(command)){
+				if(Program.CommandList.ContainsCommand(command)){
 					LinkedDiscordMessage linkedMessage = e;
 					if(!LilGUtil.CheckPermission(command, linkedMessage.server, linkedMessage.channel, linkedMessage.author)){
 						await respondTo.respond($"Sorry, you don't have the permission to run {command}");
@@ -116,7 +115,7 @@ namespace FozruciCS.Listeners{
 					}
 
 					ArraySegment<string> segment = new ArraySegment<string>(args, offset, args.Length - offset);
-					try{ await Program.Commands[command].HandleCommand(this, respondTo, segment, (LinkedDiscordMessage)e); } catch(Exception ex){
+					try{ await Program.CommandList[command].HandleCommand(this, respondTo, segment, (LinkedDiscordMessage)e); } catch(Exception ex){
 						Logger.Error($"Problem processing command: \n{ex}");
 						await respondTo.respond($"Sorry there was a problem processing the command: {ex.Message}");
 						return false;

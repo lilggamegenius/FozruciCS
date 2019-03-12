@@ -80,6 +80,10 @@
       <HintPath>..\packages\NLog.4.1.2\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
+      <Reference Include="Renci.SshNet, Version=2016.1.0.0, Culture=neutral, PublicKeyToken=1cee9f8bde3db106">
+          <HintPath>..\packages\SSH.NET.2016.1.0\lib\net40\Renci.SshNet.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
     <Reference Include="System" />
       <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
           <HintPath>..\packages\System.Buffers.4.4.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
@@ -124,10 +128,12 @@
   </ItemGroup>
   <ItemGroup>
       <Compile Include="Commands\HCF.cs"/>
+      <Compile Include="Commands\Info.cs"/>
     <Compile Include="Commands\ICommand.cs" />
       <Compile Include="Commands\Join.cs"/>
     <Compile Include="Commands\Ping.cs" />
       <Compile Include="Commands\Repl.cs"/>
+      <Compile Include="Commands\Term.cs"/>
     <Compile Include="Config\Configuration.cs" />
     <Compile Include="Config\DiscordChannelConfiguration.cs" />
     <Compile Include="Config\IChannelConfiguration.cs" />

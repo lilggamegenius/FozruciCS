@@ -86,7 +86,7 @@ namespace FozruciCS.Utils{
 			}
 
 			// end owner checks
-			ICommand command = Program.Commands[commandName]; // Get required permission level
+			ICommand command = Program.CommandList[commandName]; // Get required permission level
 			PermissionLevel permission = (PermissionLevel)Attribute.GetCustomAttribute(command.GetType(), typeof(PermissionLevel));
 			if(permission == null){ Logger.Warn($"Command \"{commandName}\" does not have a valid permission set on the class"); }
 
@@ -126,32 +126,11 @@ namespace FozruciCS.Utils{
 			return false;
 		}
 
-		public static string[] SplitMessage(this string stringToSplit, int amountToSplit = 0, bool removeQuotes = true){
+		public static string[] SplitMessage(this string stringToSplit){
 			if(stringToSplit == null){ return new string[0]; }
 
-			List<string> list = new List<string>();
-			Match argSep = Regex.Match(stringToSplit, "([^\"]\\S*|\".+?\")\\s*");
-			foreach(Capture match in argSep.Captures){ list.Add(match.Value); }
-
-			if(!removeQuotes){ return list.ToArray(); }
-
-			if(amountToSplit != 0){
-				for(int i = 0; list.Count > i; i++){
-					// go through all of the
-					list[i] = Regex.Replace(list[i], "\"", "", RegexOptions.Compiled);   // remove quotes left in the string
-					list[i] = Regex.Replace(list[i], "''", "\"", RegexOptions.Compiled); // replace double ' to quotes
-					// go to next string
-				}
-			} else{
-				for(int i = 0; (list.Count > i) || (amountToSplit > i); i++){
-					// go through all of the
-					list[i] = Regex.Replace(list[i], "\"", "", RegexOptions.Compiled);   // remove quotes left in the string
-					list[i] = Regex.Replace(list[i], "''", "\"", RegexOptions.Compiled); // replace double ' to quotes
-					// go to next string
-				}
-			}
-
-			return list.ToArray();
+			Regex re = new Regex("(?<=\")[^\"]*(?=\")|[^\" ]+");
+			return re.Matches(stringToSplit).Cast<Match>().Select(m=>m.Value).ToArray();
 		}
 
 		public static bool ContainsAny(this string check, params string[] contain)=>contain.Any(check.Contains);
