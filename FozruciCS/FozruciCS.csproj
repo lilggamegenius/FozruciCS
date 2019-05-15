@@ -131,8 +131,10 @@
       <Compile Include="Commands\Info.cs"/>
     <Compile Include="Commands\ICommand.cs" />
       <Compile Include="Commands\Join.cs"/>
+      <Compile Include="Commands\Markov.cs"/>
     <Compile Include="Commands\Ping.cs" />
       <Compile Include="Commands\Repl.cs"/>
+      <Compile Include="Commands\Send.cs"/>
       <Compile Include="Commands\Term.cs"/>
     <Compile Include="Config\Configuration.cs" />
     <Compile Include="Config\DiscordChannelConfiguration.cs" />
@@ -162,9 +164,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
       <Content Include="Data\debugConfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-      <Content Include="Data\config.json"/>
+      <Content Include="Data\config.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     <Content Include="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
