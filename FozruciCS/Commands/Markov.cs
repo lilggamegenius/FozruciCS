@@ -22,6 +22,8 @@ namespace FozruciCS.Commands{
 
 		public async Task Help(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e){await respondTo.respond(">_>");}
 
-		public async Task onMessage(IListener listener, IRespondable respondTo, LinkedMessage e){}
+		public async Task onMessage(IListener listener, IRespondable respondTo, LinkedMessage e){
+			await Task.Run(()=>{}); // Todo add code here
+		}
 	}
 }

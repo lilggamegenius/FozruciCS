@@ -73,8 +73,12 @@ namespace FozruciCS{
 					}).Start();
 					foreach(string serverKey in Config.servers.Keys){
 						new Thread(()=>{
-							Config.servers[serverKey].IrcListener = new IrcListener(Config.servers[serverKey]);
-							AppDomain.CurrentDomain.ProcessExit += Config.servers[serverKey].IrcListener.ExitHandler;
+							/*
+							IrcListener ircListener = new IrcListener(Config.servers[serverKey]);
+							Config.servers[serverKey].IrcListener = ircListener;
+							AppDomain.CurrentDomain.ProcessExit += ircListener.ExitHandler;
+							*/
+							AppDomain.CurrentDomain.ProcessExit += (Config.servers[serverKey].IrcListener = new IrcListener(Config.servers[serverKey])).ExitHandler;
 						}).Start();
 					}
 				}

@@ -137,21 +137,25 @@ namespace FozruciCS.Listeners{
 			}
 
 			bool isCommand = await CommandHandler(e);
+			if(!isCommand){ await Program.CommandList.message(this, (LinkedDiscordChannel)e.Channel, (LinkedDiscordMessage)e); }
+
 			Logger.InfoFormat($"{(isCommand ? "Command" : "Message")} from ({e.Guild.Name}) #{e.Channel.Name} by {e.Author.GetHostMask()}: {e.Message.Content} {builder}");
 		}
 
-		private async Task OnClientOnReady(ReadyEventArgs args)=>Logger.Info("Discord listener is now ready");
+		private async Task OnClientOnReady(ReadyEventArgs args)=>await Task.Run(()=>Logger.Info("Discord listener is now ready"));
 
 		private async Task OnClientError(ClientErrorEventArgs e){
-			Logger.Error(e.EventName, e.Exception);
-			if(e.Exception is AggregateException exception){
-				for(int i = 0; i < exception.InnerExceptions.Count; i++){
-					Exception innerException = exception.InnerExceptions[i];
-					Logger.Error($"[{i + 1}] {innerException.Message}: \n{innerException.StackTrace}", innerException);
+			await Task.Run(()=>{
+				Logger.Error(e.EventName, e.Exception);
+				if(e.Exception is AggregateException exception){
+					for(int i = 0; i < exception.InnerExceptions.Count; i++){
+						Exception innerException = exception.InnerExceptions[i];
+						Logger.Error($"[{i + 1}] {innerException.Message}: \n{innerException.StackTrace}", innerException);
+					}
 				}
-			}
+			});
 		}
 
-		private async Task OnSocketError(SocketErrorEventArgs e)=>Logger.Error(e.Exception.Message, e.Exception);
+		private async Task OnSocketError(SocketErrorEventArgs e)=>await Task.Run(()=>Logger.Error(e.Exception.Message, e.Exception));
 	}
 }

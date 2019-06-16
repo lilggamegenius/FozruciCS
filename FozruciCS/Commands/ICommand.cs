@@ -16,13 +16,17 @@ namespace FozruciCS.Commands{
 	public abstract class ISaveable{
 		public virtual string path=>GetType().Name;
 		public virtual async Task SaveData(){
-			using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(new FileInfo($"Data/{path}.json").Open(FileMode.Create)))){
-				Program.Serializer.Serialize(textWriter, this);
-			}
+			await Task.Run(()=>{
+				using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(new FileInfo($"Data/{path}.json").Open(FileMode.Create)))){
+					Program.Serializer.Serialize(textWriter, this);
+				}
+			});
 		}
 		public virtual async Task<ISaveable> LoadData(){
-			using(StreamReader sr = new StreamReader(new FileInfo($"Data/{path}.json").OpenRead()))
-			using(JsonTextReader reader = new JsonTextReader(sr)){ return Program.Serializer.Deserialize<ISaveable>(reader); }
+			return await Task.Run(()=>{
+				using(StreamReader sr = new StreamReader(new FileInfo($"Data/{path}.json").OpenRead()))
+				using(JsonTextReader reader = new JsonTextReader(sr)){ return Program.Serializer.Deserialize<ISaveable>(reader); }
+			});
 		}
 	}
 

@@ -95,8 +95,9 @@ namespace FozruciCS.Listeners{
 		}
 		private async void OnChannelMessageRecieved(PrivateMessageEventArgs e){
 			bool isCommand = await CommandHandler(e);
-			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.Source} by {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
 			if(!isCommand){ await Program.CommandList.message(this, (LinkedIrcChannel)e.PrivateMessage.Channel, (LinkedIrcMessage)e); }
+
+			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.Source} by {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
 		}
 
 		private async void OnPrivateMessageRecieved(object sender, PrivateMessageEventArgs e){
@@ -111,6 +112,8 @@ namespace FozruciCS.Listeners{
 			}
 
 			bool isCommand = await CommandHandler(e);
+			if(!isCommand){ await Program.CommandList.message(this, (LinkedIrcUser)e.PrivateMessage.User, (LinkedIrcMessage)e); }
+
 			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
 		}
 

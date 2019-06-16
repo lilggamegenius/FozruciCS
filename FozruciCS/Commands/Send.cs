@@ -21,19 +21,22 @@ namespace FozruciCS.Commands{
 			SendOptions opts = new SendOptions();
 			try{
 				opts.Parse(args);
+				string msg = opts.Parameters.Count > 0 ? LilGUtil.ArgJoiner(opts.Parameters.ToArray()) : opts.Parameters[0];
+				if(opts.Raw){
+					LinkedIrcMessage message = (LinkedIrcMessage)e;
+					message.Client.SendRawMessage(msg);
+					return;
+				}
+
 				if(opts.channelId != 0){
 					DiscordChannel channel = await Program.Config.DiscordSocketClient.GetChannelAsync(opts.channelId);
-					string msg = opts.Parameters.Count > 1 ? LilGUtil.ArgJoiner(opts.Parameters.ToArray()) : opts.Parameters[0];
 					await channel.SendMessageAsync(msg);
 					return;
 				}
 
 				if(opts.channel != null){
 					LinkedIrcMessage message = (LinkedIrcMessage)e;
-					if(message.Client.Channels.Contains(opts.channel)){
-						string msg = opts.Parameters.Count > 1 ? LilGUtil.ArgJoiner(opts.Parameters.ToArray()) : opts.Parameters[0];
-						message.Client.SendMessage(msg, opts.channel);
-					}
+					if(message.Client.Channels.Contains(opts.channel)){ message.Client.SendMessage(msg, opts.channel); }
 				}
 			} catch(GetOptException){ await Help(listener, respondTo, args, e); }
 		}
@@ -49,9 +52,12 @@ namespace FozruciCS.Commands{
 
 		public ulong channelId;
 		[Parameters(Min = 1)] public List<string> Parameters = new List<string>();
+
+		[Argument, FlagArgument(true), ShortArgument('r')] public bool Raw = false;
 		[Argument, ShortArgument('c')]
 		public string channel{
 			get=>_channel;
+			// ReSharper disable once UnusedMember.Global
 			set{
 				string val = value;
 				if(val[0] == '#'){
