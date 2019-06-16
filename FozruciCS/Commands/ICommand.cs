@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Common.Logging;
 using DSharpPlus;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
@@ -13,19 +14,35 @@ namespace FozruciCS.Commands{
 		Task Help(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e);
 	}
 
-	public abstract class ISaveable{
-		public virtual string path=>GetType().Name;
-		public virtual async Task SaveData(){
+	public abstract class ISaveable<T>
+		where T:ISaveable<T>{
+		private const string PATH_FORMAT = "Data/{0}/{1}.json";
+		private static readonly ILog Logger = LogManager.GetLogger<ISaveable<T>>();
+		protected virtual string name=>GetType().Name;
+		protected virtual string folder=>GetType().Name;
+		public virtual async Task SaveData(T data){
 			await Task.Run(()=>{
-				using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(new FileInfo($"Data/{path}.json").Open(FileMode.Create)))){
-					Program.Serializer.Serialize(textWriter, this);
+				FileInfo file = new FileInfo(string.Format(PATH_FORMAT, folder, name));
+				Directory.CreateDirectory(file.DirectoryName);
+				using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(file.Create()))){
+					Program.Serializer.Serialize(textWriter, data ?? this);
+					Logger.Debug($"Saving data to file {file.FullName}");
 				}
 			});
 		}
-		public virtual async Task<ISaveable> LoadData(){
+		public virtual async Task<T> LoadData(){
+			FileInfo file = new FileInfo(string.Format(PATH_FORMAT, folder, name));
+			if(!file.Exists){
+				await SaveData(null);
+				return (T)this;
+			}
+
 			return await Task.Run(()=>{
-				using(StreamReader sr = new StreamReader(new FileInfo($"Data/{path}.json").OpenRead()))
-				using(JsonTextReader reader = new JsonTextReader(sr)){ return Program.Serializer.Deserialize<ISaveable>(reader); }
+				using(StreamReader sr = new StreamReader(file.OpenRead()))
+				using(JsonTextReader reader = new JsonTextReader(sr)){
+					Logger.Debug($"Loading data from file {file.FullName}");
+					return Program.Serializer.Deserialize<T>(reader);
+				}
 			});
 		}
 	}

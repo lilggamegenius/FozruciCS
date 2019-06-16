@@ -39,7 +39,6 @@ namespace FozruciCS.Commands{
 				if(opts.Parameters.Count != 0){
 					SshClient = CreateClient(opts);
 					SshClient.ErrorOccurred += (sender, eventArgs)=>Logger.Error($"SSH Error: \n{eventArgs.Exception}");
-					//SshClient.CreateShellStream()
 					SshClient.Connect();
 					await respondTo.respond("Connected", e.author);
 				}
