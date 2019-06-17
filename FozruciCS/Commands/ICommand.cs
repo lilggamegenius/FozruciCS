@@ -20,30 +20,40 @@ namespace FozruciCS.Commands{
 		private static readonly ILog Logger = LogManager.GetLogger<ISaveable<T>>();
 		protected virtual string name=>GetType().Name;
 		protected virtual string folder=>GetType().Name;
-		public virtual async Task SaveData(T data){
+		public virtual async Task SaveData(T data = null){
 			await Task.Run(()=>{
-				FileInfo file = new FileInfo(string.Format(PATH_FORMAT, folder, name));
+				FileInfo file = new FileInfo(string.Format(PATH_FORMAT + ".temp", folder, name));
+				FileInfo oldFile = new FileInfo(string.Format(PATH_FORMAT, folder, name));
+				if(file.DirectoryName == null){
+					return; // Why would this ever be null?
+				}
+
 				Directory.CreateDirectory(file.DirectoryName);
 				using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(file.Create()))){
-					Program.Serializer.Serialize(textWriter, data ?? this);
+					Program.Serializer.Serialize(textWriter, data ?? this); // Save to temporary directory
 					Logger.Debug($"Saving data to file {file.FullName}");
 				}
+
+				oldFile.Delete();
+				file.MoveTo(oldFile.FullName); // Move to correct location
+				Logger.Debug("Replaced save file with temp file");
 			});
 		}
 		public virtual async Task<T> LoadData(){
 			FileInfo file = new FileInfo(string.Format(PATH_FORMAT, folder, name));
-			if(!file.Exists){
-				await SaveData(null);
-				return (T)this;
+			if(file.Exists){
+				return await Task.Run(()=>{
+					using(StreamReader sr = new StreamReader(file.OpenRead()))
+					using(JsonTextReader reader = new JsonTextReader(sr)){
+						Logger.Debug($"Loading data from file {file.FullName}");
+						T temp = Program.Serializer.Deserialize<T>(reader);
+						return temp;
+					}
+				});
 			}
 
-			return await Task.Run(()=>{
-				using(StreamReader sr = new StreamReader(file.OpenRead()))
-				using(JsonTextReader reader = new JsonTextReader(sr)){
-					Logger.Debug($"Loading data from file {file.FullName}");
-					return Program.Serializer.Deserialize<T>(reader);
-				}
-			});
+			await SaveData();
+			return (T)this;
 		}
 	}
 

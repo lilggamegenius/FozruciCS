@@ -41,6 +41,7 @@ namespace FozruciCS{
 			saveTimer.Elapsed += (sender, args)=>{
 				using(JsonTextWriter textWriter = new JsonTextWriter(new StreamWriter(_permissionsFile.Open(FileMode.Create)))){ Serializer.Serialize(textWriter, Permissions); }
 			};
+			Serializer.Formatting = Formatting.Indented;
 		}
 		public static long CurrentTimeMillis=>DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
