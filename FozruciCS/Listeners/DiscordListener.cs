@@ -55,10 +55,17 @@ namespace FozruciCS.Listeners{
 			titanusTimer.Elapsed += async (sender, args)=>{
 				DiscordGuild guild = _client.Guilds[215943758527594496];
 				DiscordMember titanus = await guild.GetMemberAsync(376087025234870272);
-				if((titanus.Presence.Status == UserStatus.Offline) &&
-				   !titanusDown){
-					await guild?.GetChannel(215943758527594496)?.SendMessageAsync("<@206237974105554944> Titanus is down");
-					titanusDown = true;
+				//DiscordMember titanus = await guild.GetMemberAsync(131494148350935040); // Test
+				if(titanus.Presence == null){
+					return; // Discord sometimes doesn't return the Presence so just return if null
+				}
+
+				if(titanus.Presence.Status == UserStatus.Offline){
+					if(!titanusDown){
+						await guild?.GetChannel(215943758527594496)?.SendMessageAsync("<@206237974105554944> Titanus is down");
+						//await guild?.GetChannel(215943758527594496)?.SendMessageAsync("Down message"); // Test
+						titanusDown = true;
+					}
 				} else{ titanusDown = false; }
 			};
 		}

@@ -137,6 +137,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+      <Compile Include="Commands\8Ball.cs"/>
       <Compile Include="Commands\HCF.cs"/>
       <Compile Include="Commands\Info.cs"/>
     <Compile Include="Commands\ICommand.cs" />
