@@ -4,9 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Windows.Forms;
 using Common.Logging;
 using FozruciCS.Commands;
 using FozruciCS.Config;
+using FozruciCS.Forms;
 using FozruciCS.Listeners;
 using Newtonsoft.Json;
 using Timer = System.Timers.Timer;
@@ -97,7 +99,7 @@ namespace FozruciCS{
 					}
 				}
 
-				//Application.Run(new Form());
+				Application.Run(new MainForm());
 				bool isExit = false;
 				while(!isExit){
 					Console.Write("> ");

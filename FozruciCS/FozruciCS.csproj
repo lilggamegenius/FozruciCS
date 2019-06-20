@@ -13,6 +13,7 @@
     <AssemblyName>FozruciCS</AssemblyName>
       <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+      <LangVersion>latestmajor</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -54,6 +55,10 @@
     </Reference>
       <Reference Include="GetOptNet, Version=3.1.4.0, Culture=neutral, PublicKeyToken=c9bf2c3a9070fff0">
           <HintPath>..\packages\GetOptNet.3.1.4\lib\net47\GetOptNet.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
+      <Reference Include="Jint, Version=0.0.0.0, Culture=neutral, PublicKeyToken=2e92ba9c8d81157f">
+          <HintPath>..\packages\Jint.2.11.58\lib\net451\Jint.dll</HintPath>
       <Private>True</Private>
     </Reference>
       <Reference Include="Microsoft.CodeAnalysis, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
@@ -100,6 +105,11 @@
       </Reference>
       <Reference Include="System.Configuration"/>
     <Reference Include="System.Core" />
+      <Reference Include="System.Drawing"/>
+      <Reference Include="System.Drawing.Common, Version=4.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+          <HintPath>..\packages\System.Drawing.Common.4.5.1\lib\net461\System.Drawing.Common.dll</HintPath>
+          <Private>True</Private>
+      </Reference>
       <Reference Include="System.IO.Compression"/>
       <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
           <HintPath>..\packages\System.Memory.4.5.3\lib\netstandard2.0\System.Memory.dll</HintPath>
@@ -142,6 +152,7 @@
       <Compile Include="Commands\Info.cs"/>
     <Compile Include="Commands\ICommand.cs" />
       <Compile Include="Commands\Join.cs"/>
+      <Compile Include="Commands\JS.cs"/>
       <Compile Include="Commands\Markov.cs"/>
     <Compile Include="Commands\Ping.cs" />
       <Compile Include="Commands\Repl.cs"/>
@@ -151,6 +162,12 @@
     <Compile Include="Config\DiscordChannelConfiguration.cs" />
     <Compile Include="Config\IChannelConfiguration.cs" />
     <Compile Include="Config\IRCChannelConfiguration.cs" />
+      <Compile Include="Forms\MainForm.cs">
+          <SubType>Form</SubType>
+      </Compile>
+      <Compile Include="Forms\MainForm.Designer.cs">
+          <DependentUpon>MainForm.cs</DependentUpon>
+      </Compile>
       <Compile Include="Links\IRespondable.cs"/>
     <Compile Include="Links\LinkedChannel.cs" />
     <Compile Include="Links\LinkedMessage.cs" />
@@ -184,12 +201,14 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Forms" />
-  </ItemGroup>
     <ItemGroup>
         <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll"/>
         <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll"/>
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Forms\MainForm.resx">
+            <DependentUpon>MainForm.cs</DependentUpon>
+        </EmbeddedResource>
     </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

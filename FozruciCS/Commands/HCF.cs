@@ -5,7 +5,7 @@ using Common.Logging;
 using FozruciCS.Config;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
-using FozruciCS.Utils;
+using static FozruciCS.Utils.LilGUtil;
 
 namespace FozruciCS.Commands{
 	// ReSharper disable once UnusedMember.Global
@@ -17,15 +17,15 @@ namespace FozruciCS.Commands{
 
 		public async Task HandleCommand(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e){
 			await respondTo.respond("Fore!");
-			LilGUtil.Pause(1);
+			Pause(1);
 			await respondTo.respond("I mean five!");
-			LilGUtil.Pause(1);
+			Pause(1);
 			await respondTo.respond("I mean fire!");
-			LilGUtil.Pause(1);
+			Pause(1);
 			if(e.server.isIrc){
 				foreach(Configuration.ServerConfiguration serversValue in Program.Config.servers.Values){ serversValue.IrcClient.Quit("🔥🔥🔥"); }
 
-				LilGUtil.Pause(5);
+				Pause(5);
 			}
 
 			Environment.Exit(0);

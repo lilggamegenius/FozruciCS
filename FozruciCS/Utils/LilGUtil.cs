@@ -77,7 +77,9 @@ namespace FozruciCS.Utils{
 			return 0;
 		}
 
-		public static bool CheckPermission(string commandName, LinkedServer server, LinkedChannel channel, LinkedUser user){
+		public static bool CheckIfOwner(LinkedMessage e){
+			LinkedServer server = e.server;
+			LinkedUser user = e.author;
 			if(user.isIrc){
 				LinkedIrcUser ircUser = (LinkedIrcUser)user;
 				if(ircUser.IrcUser.Match(Program.Config.servers[server.name].botOwnerHostmask)){ return true; }
@@ -85,7 +87,17 @@ namespace FozruciCS.Utils{
 				if(user.id.Equals(Program.Config.DiscordBotOwnerID.ToString())){ return true; }
 			}
 
-			// end owner checks
+			return false;
+		}
+
+		public static bool CheckPermission(string commandName, LinkedMessage e){
+			LinkedServer server = e.server;
+			LinkedChannel channel = e.channel;
+			LinkedUser user = e.author;
+			if(CheckIfOwner(e)){
+				return true; // If user is the Bot owner, bypass all permission checks
+			}
+
 			ICommand command = Program.CommandList[commandName]; // Get required permission level
 			PermissionLevel permission = (PermissionLevel)Attribute.GetCustomAttribute(command.GetType(), typeof(PermissionLevel));
 			if(permission == null){ Logger.Warn($"Command \"{commandName}\" does not have a valid permission set on the class"); }
@@ -126,8 +138,10 @@ namespace FozruciCS.Utils{
 			return false;
 		}
 
-		public static string[] SplitMessage(this string stringToSplit){
+		public static string[] SplitMessage(this string stringToSplit, bool ignoreQuotes = true){
 			if(stringToSplit == null){ return new string[0]; }
+
+			if(ignoreQuotes){ return stringToSplit.Split(' '); }
 
 			Regex re = new Regex("(?<=\")[^\"]*(?=\")|[^\" ]+");
 			return re.Matches(stringToSplit).Cast<Match>().Select(m=>m.Value).ToArray();

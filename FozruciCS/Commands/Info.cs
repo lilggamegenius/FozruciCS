@@ -6,7 +6,7 @@ using FozruciCS.Listeners;
 using NMaier.GetOptNet;
 
 namespace FozruciCS.Commands{
-	[PermissionLevel(Modes.None)]
+	[PermissionLevel]
 	public class Info : ICommand{
 		internal const string Usage = "Usage: help <Command>";
 		internal const string Epilogue = "This command has no options";

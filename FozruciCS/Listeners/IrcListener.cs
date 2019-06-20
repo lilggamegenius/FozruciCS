@@ -74,7 +74,7 @@ namespace FozruciCS.Listeners{
 
 				if(Program.CommandList.ContainsCommand(command)){
 					LinkedIrcMessage linkedMessage = e;
-					if(!LilGUtil.CheckPermission(command, linkedMessage.server, linkedMessage.channel, linkedMessage.author)){
+					if(!LilGUtil.CheckPermission(command, linkedMessage)){
 						await respondTo.respond($"Sorry, you don't have the permission to run {command}");
 						return true;
 					}
@@ -84,7 +84,7 @@ namespace FozruciCS.Listeners{
 					try{ await icommand.HandleCommand(this, respondTo, segment, (LinkedIrcMessage)e); } catch(Exception ex){
 						Logger.Error($"Problem processing command: \n{ex}");
 						await respondTo.respond($"Sorry there was a problem processing the command: {ex.Message}");
-						return false;
+						return true;
 					}
 
 					return true;

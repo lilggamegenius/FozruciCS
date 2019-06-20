@@ -77,14 +77,9 @@ namespace FozruciCS.Commands{
 
 	[AttributeUsage(AttributeTargets.Class)]
 	public class PermissionLevel : Attribute{
-		public PermissionLevel(){
-			minLevel = Modes.None;
-			requiredPermission = Permissions.None;
-		}
-
-		public PermissionLevel(Modes minLevel){
+		public PermissionLevel(Modes minLevel = Modes.None, Permissions requiredPermission = Permissions.None){
 			this.minLevel = minLevel;
-			requiredPermission = Permissions.None;
+			this.requiredPermission = Permissions.None;
 		}
 		public Modes minLevel{get;}
 		public Permissions requiredPermission{get;}

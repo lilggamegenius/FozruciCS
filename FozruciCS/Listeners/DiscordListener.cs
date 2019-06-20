@@ -77,7 +77,7 @@ namespace FozruciCS.Listeners{
 			if(e.Author == e.Client.CurrentUser){ return false; }
 
 			string message = e.Message.Content;
-			string[] args = message.Split(' ');
+			string[] args = message.SplitMessage();
 			IRespondable respondTo;
 			if(e.Channel != null){ respondTo = (LinkedDiscordChannel)e.Channel; } else{ respondTo = (LinkedDiscordUser)e.Author; }
 
@@ -116,7 +116,7 @@ namespace FozruciCS.Listeners{
 
 				if(Program.CommandList.ContainsCommand(command)){
 					LinkedDiscordMessage linkedMessage = e;
-					if(!LilGUtil.CheckPermission(command, linkedMessage.server, linkedMessage.channel, linkedMessage.author)){
+					if(!LilGUtil.CheckPermission(command, linkedMessage)){
 						await respondTo.respond($"Sorry, you don't have the permission to run {command}");
 						return true;
 					}
@@ -125,7 +125,7 @@ namespace FozruciCS.Listeners{
 					try{ await Program.CommandList[command].HandleCommand(this, respondTo, segment, (LinkedDiscordMessage)e); } catch(Exception ex){
 						Logger.Error($"Problem processing command: \n{ex}");
 						await respondTo.respond($"Sorry there was a problem processing the command: {ex.Message}");
-						return false;
+						return true;
 					}
 
 					return true;
@@ -157,7 +157,7 @@ namespace FozruciCS.Listeners{
 				if(e.Exception is AggregateException exception){
 					for(int i = 0; i < exception.InnerExceptions.Count; i++){
 						Exception innerException = exception.InnerExceptions[i];
-						Logger.Error($"[{i + 1}] {innerException.Message}: \n{innerException.StackTrace}", innerException);
+						Logger.Error($"[{i}] {innerException.Message}\n{innerException.StackTrace}", innerException);
 					}
 				}
 			});

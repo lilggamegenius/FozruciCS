@@ -7,7 +7,7 @@ using FozruciCS.Listeners;
 namespace FozruciCS.Commands{
 	// ReSharper disable once UnusedMember.Global
 	// Loaded via reflection
-	[PermissionLevel(Modes.None)]
+	[PermissionLevel]
 	public class Ping : ICommand{
 		internal const string Usage = "Usage: ping";
 		internal const string Epilogue = "This command has no options";

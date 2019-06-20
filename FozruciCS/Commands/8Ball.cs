@@ -6,9 +6,9 @@ using FozruciCS.Listeners;
 using FozruciCS.Utils;
 
 namespace FozruciCS.Commands{
-	[PermissionLevel(Modes.None)]
+	[PermissionLevel]
 	public class Magic8Ball : ICommand{
-		internal const string Usage = "Usage: help <Command>";
+		internal const string Usage = "Usage: 8Ball";
 		internal const string Epilogue = "This command has no options";
 		private static readonly ILog Logger = LogManager.GetLogger<Magic8Ball>();
 		static Magic8Ball(){

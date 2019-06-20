@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 namespace FozruciCS.Commands{
 	// ReSharper disable once UnusedMember.Global
 	// Loaded via reflection
-	[PermissionLevel(Modes.None)]
+	[PermissionLevel]
 	public class Markov : ICommand{
 		internal const string Usage = "Usage: Markov";
 		internal const string Epilogue = "This command has no options";
