@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
-using Common.Logging;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using NLog;
 
 namespace FozruciCS.Utils{
 	public static class DiscordUtils{
@@ -15,7 +14,7 @@ namespace FozruciCS.Utils{
 		public const char Italics = '_';
 		public const string Underline = "__";
 
-		private static readonly ILog Logger = LogManager.GetLogger(typeof(DiscordUtils));
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)] public static string FormatBold(this string str)=>$"{Bold}{str}{Bold}";
 
@@ -65,9 +64,7 @@ namespace FozruciCS.Utils{
 		public static string ToCommaSeperatedList(this IEnumerable<DiscordRole> array){
 			StringBuilder builder = new StringBuilder();
 			foreach(DiscordRole item in array){
-				if(builder.Length != 0){
-					builder.Append(", ");
-				}
+				if(builder.Length != 0){ builder.Append(", "); }
 
 				builder.Append(item.Name);
 			}

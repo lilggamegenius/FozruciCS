@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ChatSharp;
-using Common.Logging;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
+using NLog;
 using NMaier.GetOptNet;
 
 namespace FozruciCS.Commands{
@@ -13,7 +13,7 @@ namespace FozruciCS.Commands{
 	public class Join : ICommand{
 		internal const string Usage = "Usage: join <channel>";
 		internal const string Epilogue = "This command has no options";
-		private static readonly ILog Logger = LogManager.GetLogger<Join>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		static Join(){Program.RegisterCommand(nameof(Join), new Join());}
 
 		public async Task HandleCommand(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e){

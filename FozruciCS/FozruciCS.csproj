@@ -47,9 +47,6 @@
         </Content>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Common.Logging" Version="3.4.1"/>
-        <PackageReference Include="Common.Logging.Core" Version="3.4.1"/>
-        <PackageReference Include="Common.Logging.NLog4412" Version="3.4.1"/>
         <PackageReference Include="DSharpPlus" Version="3.2.3"/>
         <PackageReference Include="GetOptNet" Version="3.1.4"/>
         <PackageReference Include="Jint" Version="2.11.58"/>

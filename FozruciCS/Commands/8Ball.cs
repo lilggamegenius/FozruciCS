@@ -1,16 +1,16 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Common.Logging;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
 using FozruciCS.Utils;
+using NLog;
 
 namespace FozruciCS.Commands{
 	[PermissionLevel]
 	public class Magic8Ball : ICommand{
 		internal const string Usage = "Usage: 8Ball";
 		internal const string Epilogue = "This command has no options";
-		private static readonly ILog Logger = LogManager.GetLogger<Magic8Ball>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		static Magic8Ball(){
 			Magic8Ball magic8Ball = new Magic8Ball();
 			Program.RegisterCommand("8Ball", magic8Ball);

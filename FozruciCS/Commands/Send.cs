@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Common.Logging;
 using DSharpPlus.Entities;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
 using FozruciCS.Utils;
+using NLog;
 using NMaier.GetOptNet;
 
 namespace FozruciCS.Commands{
@@ -14,7 +14,7 @@ namespace FozruciCS.Commands{
 	public class Send : ICommand{
 		internal const string Usage = "Usage: Send <channel>";
 		internal const string Epilogue = "This command has no options";
-		private static readonly ILog Logger = LogManager.GetLogger<Send>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		static Send(){Program.RegisterCommand(nameof(Send), new Send());}
 
 		public async Task HandleCommand(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e){

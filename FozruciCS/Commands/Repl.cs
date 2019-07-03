@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Common.Logging;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
 using FozruciCS.Utils;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using NLog;
 using NMaier.GetOptNet;
 
 namespace FozruciCS.Commands{
@@ -15,7 +15,7 @@ namespace FozruciCS.Commands{
 	public class Repl : ICommand{
 		internal const string Usage = "Usage: Repl <code>";
 		internal const string Epilogue = "This command has no options";
-		private static readonly ILog Logger = LogManager.GetLogger<Repl>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		private readonly ReplGlobals Globals = new ReplGlobals();
 
 		static Repl(){Program.RegisterCommand(nameof(Repl), new Repl());}

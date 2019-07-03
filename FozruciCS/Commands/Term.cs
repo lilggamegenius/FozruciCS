@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Common.Logging;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
+using NLog;
 using NMaier.GetOptNet;
 using Renci.SshNet;
 using SshConfigParser;
@@ -12,7 +12,7 @@ namespace FozruciCS.Commands{
 	[PermissionLevel(Modes.BotOwner)]
 	public class Term : ICommand{
 		internal const string Usage = "Usage: Term [options] <host>";
-		private static readonly ILog Logger = LogManager.GetLogger<Term>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		public string host, username, keypath, password;
 		public SshClient SshClient;
 		public string termChar = ">";
@@ -38,14 +38,14 @@ namespace FozruciCS.Commands{
 				opts.Parse(args);
 				if(opts.Parameters.Count != 0){
 					SshClient = CreateClient(opts);
-					SshClient.ErrorOccurred += (sender, eventArgs)=>Logger.Error($"SSH Error: \n{eventArgs.Exception}");
+					SshClient.ErrorOccurred += (sender, eventArgs)=>Logger.Error(eventArgs.Exception, "SSH Error: \n{0}", eventArgs.Exception);
 					SshClient.Connect();
 					await respondTo.respond("Connected", e.author);
 				}
 			} catch(GetOptException ex){
 				await respondTo.respond(ex.Message, e.author);
 				Task task = Help(listener, respondTo, args, e);
-				Logger.Warn(ex.ToString());
+				Logger.Warn(ex);
 				await task;
 			}
 		}

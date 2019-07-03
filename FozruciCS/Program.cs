@@ -1,14 +1,14 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Common.Logging;
 using FozruciCS.Commands;
 using FozruciCS.Config;
 using FozruciCS.Listeners;
 using Newtonsoft.Json;
+using NLog;
 using Timer = System.Timers.Timer;
 
 namespace FozruciCS{
@@ -20,7 +20,7 @@ namespace FozruciCS{
 		private const int ConnectDelay = 15 * 1000;
 		public static readonly JsonSerializer Serializer = new JsonSerializer();
 		internal static readonly CommandList CommandList;
-		private static readonly ILog Logger = LogManager.GetLogger<Program>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		private static FileInfo _configFile;
 		private static FileInfo _permissionsFile;
 		public static Configuration Config;
@@ -35,7 +35,7 @@ namespace FozruciCS{
 											   .Where(p=>typeof(ICommand).IsAssignableFrom(p) && p.IsClass && !p.IsAbstract);
 			foreach(Type command in types){
 				RuntimeHelpers.RunClassConstructor(command.TypeHandle);
-				Logger.InfoFormat("Loaded command {0} as {1}", command.Name, command.FullName);
+				Logger.Info("Loaded command {0} as {1}", command.Name, command.FullName);
 			}
 
 			saveTimer.Elapsed += (sender, args)=>{
@@ -47,7 +47,7 @@ namespace FozruciCS{
 
 		public static int Main(string[] args){
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-			Logger.Debug($"Current directory is {Directory.GetCurrentDirectory()}");
+			Logger.Debug("Current directory is {0}", Directory.GetCurrentDirectory());
 			string configFilePath;
 			string permissionsFilePath;
 			#if DEBUG
@@ -59,8 +59,8 @@ namespace FozruciCS{
 			#endif
 			_configFile = new FileInfo(configFilePath);
 			_permissionsFile = new FileInfo(permissionsFilePath);
-			Logger.Info("Config Path = "      + _configFile);
-			Logger.Info("Permissions Path = " + _permissionsFile);
+			Logger.Info("Config Path = {0}", _configFile);
+			Logger.Info("Permissions Path = {0}", _permissionsFile);
 			try{
 				if(!_configFile.Exists){ throw new FileNotFoundException(configFilePath); }
 
@@ -107,7 +107,7 @@ namespace FozruciCS{
 
 				//client.Disconnect();
 			} catch(Exception e){
-				Logger.Error($"Error starting bot\n{e}");
+				Logger.Error(e, "Error starting bot");
 				return 1;
 			}
 
@@ -115,7 +115,7 @@ namespace FozruciCS{
 		}
 		private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e){
 			Exception exception = e.ExceptionObject as Exception;
-			Logger.Fatal($"Unhandled Exception caught: {exception?.Message}\n{exception?.StackTrace}", exception);
+			Logger.Fatal(exception, "Unhandled Exception caught");
 		}
 
 		public static void RegisterCommand(string commandName, ICommand command){CommandList[commandName.ToLower()] = command;}

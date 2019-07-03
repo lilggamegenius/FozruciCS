@@ -2,15 +2,15 @@ using System;
 using System.Threading.Tasks;
 using ChatSharp;
 using ChatSharp.Events;
-using Common.Logging;
 using FozruciCS.Commands;
 using FozruciCS.Config;
 using FozruciCS.Links;
 using FozruciCS.Utils;
+using NLog;
 
 namespace FozruciCS.Listeners{
 	public class IrcListener : IListener{
-		private static readonly ILog Logger = LogManager.GetLogger<IrcListener>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		public Configuration.ServerConfiguration Config;
 		public IrcClient IrcClient;
 		public IrcUser IrcSelf;
@@ -82,7 +82,7 @@ namespace FozruciCS.Listeners{
 					ICommand icommand = Program.CommandList[command];
 					ArraySegment<string> segment = new ArraySegment<string>(args, offset, args.Length - offset);
 					try{ await icommand.HandleCommand(this, respondTo, segment, (LinkedIrcMessage)e); } catch(Exception ex){
-						Logger.Error($"Problem processing command: \n{ex}");
+						Logger.Error(ex, "Problem processing command: \n{0}", ex.StackTrace);
 						await respondTo.respond($"Sorry there was a problem processing the command: {ex.Message}");
 						return true;
 					}
@@ -97,7 +97,11 @@ namespace FozruciCS.Listeners{
 			bool isCommand = await CommandHandler(e);
 			if(!isCommand){ await Program.CommandList.message(this, (LinkedIrcChannel)e.PrivateMessage.Channel, (LinkedIrcMessage)e); }
 
-			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.Source} by {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
+			Logger.Info("{0} from {1} by {2}: {3}",
+						isCommand ? "Command" : "Message",
+						e.PrivateMessage.Source,
+						e.PrivateMessage.User.Hostmask,
+						e.PrivateMessage.Message);
 		}
 
 		private async void OnPrivateMessageRecieved(object sender, PrivateMessageEventArgs e){
@@ -114,7 +118,7 @@ namespace FozruciCS.Listeners{
 			bool isCommand = await CommandHandler(e);
 			if(!isCommand){ await Program.CommandList.message(this, (LinkedIrcUser)e.PrivateMessage.User, (LinkedIrcMessage)e); }
 
-			Logger.Info($"{(isCommand ? "Command" : "Message")} from {e.PrivateMessage.User.Hostmask}: {e.PrivateMessage.Message}");
+			Logger.Info("{0} from {1}: {2}", isCommand ? "Command" : "Message", e.PrivateMessage.User.Hostmask, e.PrivateMessage.Message);
 		}
 
 		private void OnCtcpMessageRecieved(PrivateMessageEventArgs e){
@@ -150,14 +154,14 @@ namespace FozruciCS.Listeners{
 					break;
 			}
 
-			Logger.InfoFormat("Received CTCP message: {0}", message);
+			Logger.Info("Received CTCP message: {0}", message);
 		}
 
-		private void OnUserJoinedChannel(object sender, ChannelUserEventArgs e){Logger.InfoFormat("User {0} Joined channel {1}", e.User.Hostmask, e.Channel.Name);}
+		private void OnUserJoinedChannel(object sender, ChannelUserEventArgs e){Logger.Info("User {0} Joined channel {1}", e.User.Hostmask, e.Channel.Name);}
 
-		private void OnRawMessageRecieved(object sender, RawMessageEventArgs args){Logger.DebugFormat("<<< {0}", args.Message);}
+		private void OnRawMessageRecieved(object sender, RawMessageEventArgs args){Logger.Debug("<<< {0}", args.Message);}
 
-		private void OnRawMessageSent(object sender, RawMessageEventArgs args){Logger.DebugFormat(">>> {0}", args.Message);}
+		private void OnRawMessageSent(object sender, RawMessageEventArgs args){Logger.Debug(">>> {0}", args.Message);}
 
 		private void OnConnect(object sender, EventArgs e){
 			Task.Run(()=>{
@@ -170,7 +174,7 @@ namespace FozruciCS.Listeners{
 			});
 		}
 
-		private void OnError(object sender, ErrorEventArgs e){Logger.Error(e.Error.Message, e.Error);}
+		private void OnError(object sender, ErrorEventArgs e){Logger.Error(e.Error, e.Error.Message);}
 
 		private enum CtcpCommands{ PING, FINGER, VERSION, USERINFO, CLIENTINFO, SOURCE, TIME, PAGE, AVATAR }
 	}

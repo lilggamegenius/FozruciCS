@@ -5,16 +5,16 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Common.Logging;
 using DSharpPlus;
 using FozruciCS.Commands;
 using FozruciCS.Links;
+using NLog;
 using PermissionLevel = FozruciCS.Commands.PermissionLevel;
 
 namespace FozruciCS.Utils{
 	public static class LilGUtil{
 		private static readonly Random Rand = new Random();
-		private static readonly ILog Logger = LogManager.GetLogger(nameof(LilGUtil));
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public static bool IsLinux{
 			get{
@@ -100,7 +100,7 @@ namespace FozruciCS.Utils{
 
 			ICommand command = Program.CommandList[commandName]; // Get required permission level
 			PermissionLevel permission = (PermissionLevel)Attribute.GetCustomAttribute(command.GetType(), typeof(PermissionLevel));
-			if(permission == null){ Logger.Warn($"Command \"{commandName}\" does not have a valid permission set on the class"); }
+			if(permission == null){ Logger.Warn("Command \"{0}\" does not have a valid permission set on the class", commandName); }
 
 			if(Program.Permissions.TryGetValue(server.name, out Dictionary<string, Dictionary<string, PermissionLevel>> channels)){
 				string check = channel == null ? "PM" : channel.name;
@@ -109,7 +109,7 @@ namespace FozruciCS.Utils{
 
 			// Check permissions
 			if(permission == null){
-				Logger.Warn($"Disallowing use of command \"{commandName}\" because no permission is set");
+				Logger.Warn("Disallowing use of command \"{0}\" because no permission is set", commandName);
 				return false; // Prevent accidentally allowing dangerous commands to be ran by normal users
 			}
 
@@ -144,7 +144,7 @@ namespace FozruciCS.Utils{
 			if(ignoreQuotes){ return stringToSplit.Split(' '); }
 
 			Regex re = new Regex("(?<=\")[^\"]*(?=\")|[^\" ]+");
-			return re.Matches(stringToSplit).Cast<Match>().Select(m=>m.Value).ToArray();
+			return re.Matches(stringToSplit).Select(m=>m.Value).ToArray();
 		}
 
 		public static bool ContainsAny(this string check, params string[] contain)=>contain.Any(check.Contains);
@@ -189,7 +189,7 @@ namespace FozruciCS.Utils{
 		}
 
 		public static void Pause(int time, bool echoTime = true){
-			if(echoTime){ Logger.Debug("Sleeping for " + time + " seconds"); }
+			if(echoTime){ Logger.Debug("Sleeping for {0} seconds", time); }
 
 			Thread.Sleep(time * 1000);
 		}
@@ -328,7 +328,7 @@ namespace FozruciCS.Utils{
 			StringBuilder strToReturn = new StringBuilder();
 			for(int length = args.Length; length > argToStartFrom; argToStartFrom++){ strToReturn.Append(args[argToStartFrom]).Append(" "); }
 
-			Logger.Debug("Argument joined to: " + strToReturn);
+			Logger.Debug("Argument joined to: {0}", strToReturn);
 			return strToReturn.Length == 0
 					   ? strToReturn.ToString()
 					   : strToReturn.ToString().Substring(0, strToReturn.Length - 1);

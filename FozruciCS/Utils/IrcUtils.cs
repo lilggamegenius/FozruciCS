@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Common.Logging;
 using DSharpPlus.Entities;
 using FozruciCS.Commands;
+using NLog;
 
 namespace FozruciCS.Utils{
 	public static class IrcUtils{
@@ -21,7 +21,7 @@ namespace FozruciCS.Utils{
 		public const char SymbolForCharageReturnChar = '␍';
 
 		private const string EscapePrefix = "@!";
-		private static readonly ILog Logger = LogManager.GetLogger(typeof(IrcUtils));
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public static Dictionary<DiscordChannel, DropOutStack<DiscordUser>> LastUserToSpeak = new Dictionary<DiscordChannel, DropOutStack<DiscordUser>>();
 

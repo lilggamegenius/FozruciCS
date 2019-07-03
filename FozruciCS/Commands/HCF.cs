@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Common.Logging;
 using FozruciCS.Config;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
+using NLog;
 using static FozruciCS.Utils.LilGUtil;
 
 namespace FozruciCS.Commands{
@@ -12,7 +12,7 @@ namespace FozruciCS.Commands{
 	// Loaded via reflection
 	[PermissionLevel(Modes.BotOwner)]
 	public class HCF : ICommand{
-		private static readonly ILog Logger = LogManager.GetLogger<HCF>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		static HCF(){Program.RegisterCommand(nameof(HCF), new HCF());}
 
 		public async Task HandleCommand(IListener listener, IRespondable respondTo, IList<string> args, LinkedMessage e){

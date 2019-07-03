@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Common.Logging;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
 using Jint;
+using NLog;
 using NMaier.GetOptNet;
 using static FozruciCS.Utils.LilGUtil;
 
@@ -12,7 +12,7 @@ namespace FozruciCS.Commands{
 	public class JS : ICommand{
 		internal const string Usage = "Usage: JS <code>";
 		internal const string Epilogue = "This command has no options";
-		private static readonly ILog Logger = LogManager.GetLogger<JS>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		private readonly Engine OpEngine;
 
 		private readonly Engine UserEngine;
@@ -43,7 +43,7 @@ namespace FozruciCS.Commands{
 					engine.SetValue("e", e);
 				} else{ engine = UserEngine; }
 
-				Logger.Info($"Executing JS code as {(owner ? "Owner" : "Normal User")}: {code}");
+				Logger.Info("Executing JS code as {0}: {1}", owner ? "Owner" : "Normal User", code);
 				await respondTo.respond(engine.Execute(code).GetCompletionValue().ToString(), e.author);
 			} catch(GetOptException){ await Help(listener, respondTo, args, e); }
 		}

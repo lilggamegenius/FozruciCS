@@ -2,18 +2,18 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
-using Common.Logging;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using FozruciCS.Config;
 using FozruciCS.Links;
 using FozruciCS.Utils;
+using NLog;
 using LogLevel = DSharpPlus.LogLevel;
 
 namespace FozruciCS.Listeners{
 	public class DiscordListener : IListener{
-		private static readonly ILog Logger = LogManager.GetLogger<DiscordListener>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		public static Timer titanusTimer = new Timer{Interval = 10 * 1000, AutoReset = true, Enabled = true};
 		private readonly DiscordClient _client;
 
@@ -123,7 +123,7 @@ namespace FozruciCS.Listeners{
 
 					ArraySegment<string> segment = new ArraySegment<string>(args, offset, args.Length - offset);
 					try{ await Program.CommandList[command].HandleCommand(this, respondTo, segment, (LinkedDiscordMessage)e); } catch(Exception ex){
-						Logger.Error($"Problem processing command: \n{ex}");
+						Logger.Error(ex, "Problem processing command: \n{0}", ex);
 						await respondTo.respond($"Sorry there was a problem processing the command: {ex.Message}");
 						return true;
 					}
@@ -146,23 +146,29 @@ namespace FozruciCS.Listeners{
 			bool isCommand = await CommandHandler(e);
 			if(!isCommand){ await Program.CommandList.message(this, (LinkedDiscordChannel)e.Channel, (LinkedDiscordMessage)e); }
 
-			Logger.InfoFormat($"{(isCommand ? "Command" : "Message")} from ({e.Guild.Name}) #{e.Channel.Name} by {e.Author.GetHostMask()}: {e.Message.Content} {builder}");
+			Logger.Info("{0} from ({1}) #{2} by {3}: {4} {5}",
+						isCommand ? "Command" : "Message",
+						e.Guild.Name,
+						e.Channel.Name,
+						e.Author.GetHostMask(),
+						e.Message.Content,
+						builder);
 		}
 
 		private async Task OnClientOnReady(ReadyEventArgs args)=>await Task.Run(()=>Logger.Info("Discord listener is now ready"));
 
 		private async Task OnClientError(ClientErrorEventArgs e){
 			await Task.Run(()=>{
-				Logger.Error(e.EventName, e.Exception);
+				Logger.Error(e.Exception, e.EventName);
 				if(e.Exception is AggregateException exception){
 					for(int i = 0; i < exception.InnerExceptions.Count; i++){
 						Exception innerException = exception.InnerExceptions[i];
-						Logger.Error($"[{i}] {innerException.Message}\n{innerException.StackTrace}", innerException);
+						Logger.Error(innerException, "[{0}] {1}\n{2}", i, innerException.Message, innerException.StackTrace);
 					}
 				}
 			});
 		}
 
-		private async Task OnSocketError(SocketErrorEventArgs e)=>await Task.Run(()=>Logger.Error(e.Exception.Message, e.Exception));
+		private async Task OnSocketError(SocketErrorEventArgs e)=>await Task.Run(()=>Logger.Error(e.Exception, e.Exception.Message));
 	}
 }

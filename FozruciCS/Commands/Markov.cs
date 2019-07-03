@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
 using FozruciCS.Utils;
 using Newtonsoft.Json;
+using NLog;
 
 namespace FozruciCS.Commands{
 	// ReSharper disable once UnusedMember.Global
@@ -18,7 +18,7 @@ namespace FozruciCS.Commands{
 		internal const string Epilogue = "This command has no options";
 
 		private const int MaxGenLength = 150;
-		private static readonly ILog Logger = LogManager.GetLogger<Markov>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		private static readonly TimeSpan periodTimeSpan = TimeSpan.FromMinutes(1);
 
 		private MarkovData MarkovData;

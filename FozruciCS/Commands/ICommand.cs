@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Common.Logging;
 using DSharpPlus;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
 using Newtonsoft.Json;
+using NLog;
 
 namespace FozruciCS.Commands{
 	public interface ICommand{
@@ -17,7 +17,7 @@ namespace FozruciCS.Commands{
 	public abstract class ISaveable<T>
 		where T:ISaveable<T>{
 		private const string PATH_FORMAT = "Data/{0}/{1}.json";
-		private static readonly ILog Logger = LogManager.GetLogger<ISaveable<T>>();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		protected virtual string name=>GetType().Name;
 		protected virtual string folder=>GetType().Name;
 		public virtual async Task SaveData(T data = null){
