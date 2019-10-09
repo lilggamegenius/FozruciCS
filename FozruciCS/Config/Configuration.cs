@@ -64,8 +64,8 @@ namespace FozruciCS.Config{
 				return hashCode;
 			}
 		}
-		public static bool operator==(Configuration left, Configuration right)=>left.Equals(right);
-		public static bool operator!=(Configuration left, Configuration right)=>!left.Equals(right);
+		public static bool operator==(Configuration left, Configuration right)=>(left != null) && left.Equals(right);
+		public static bool operator!=(Configuration left, Configuration right)=>(left != null) && !left.Equals(right);
 
 		public class ServerConfiguration{
 			[JsonProperty("commandprefixes")] private string[] _commandPrefixes;

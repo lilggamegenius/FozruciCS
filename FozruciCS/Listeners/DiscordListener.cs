@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -16,6 +17,8 @@ namespace FozruciCS.Listeners{
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		public static Timer titanusTimer = new Timer{Interval = 10 * 1000, AutoReset = true, Enabled = true};
 		private readonly DiscordClient _client;
+
+		public Dictionary<LinkedChannel, List<LinkedMessage>> LoggedMessages = new Dictionary<LinkedChannel, List<LinkedMessage>>();
 
 		public bool titanusDown;
 
@@ -72,6 +75,16 @@ namespace FozruciCS.Listeners{
 		public static Configuration Config=>Program.Config;
 
 		public async void ExitHandler(object sender, EventArgs args){await _client.DisconnectAsync();}
+		public void LogMessage(LinkedChannel channel, LinkedMessage message){
+			if(!LoggedMessages.ContainsKey(channel)){ LoggedMessages.Add(channel, new List<LinkedMessage>()); }
+
+			LoggedMessages[channel].Add(message);
+		}
+		public List<LinkedMessage> GetMessages(LinkedChannel channel){
+			if(!LoggedMessages.ContainsKey(channel)){ return new List<LinkedMessage>(); }
+
+			return LoggedMessages[channel];
+		}
 
 		public async Task<bool> CommandHandler(MessageCreateEventArgs e){
 			if(e.Author == e.Client.CurrentUser){ return false; }
@@ -153,9 +166,31 @@ namespace FozruciCS.Listeners{
 						e.Author.GetHostMask(),
 						e.Message.Content,
 						builder);
+			LogMessage((LinkedDiscordChannel)e.Channel, (LinkedDiscordMessage)e);
 		}
 
-		private async Task OnClientOnReady(ReadyEventArgs args)=>await Task.Run(()=>Logger.Info("Discord listener is now ready"));
+		private async Task OnClientOnReady(ReadyEventArgs args){
+			List<Action> actions = new List<Action>();
+			foreach(DiscordGuild guild in _client.Guilds.Values){
+				IReadOnlyList<DiscordChannel> channelsList = await guild.GetChannelsAsync();
+				foreach(DiscordChannel channel in channelsList){
+					if(channel.Type != ChannelType.Text){ continue; }
+
+					LinkedDiscordChannel discordChannel = channel;
+					IReadOnlyList<DiscordMessage> messageList = await channel.GetMessagesAsync(20);
+					actions.Add(async ()=>{
+						IReadOnlyList<DiscordMessage> discordMessages = messageList;
+						List<LinkedMessage> linkedMessages = new List<LinkedMessage>();
+						foreach(DiscordMessage discordMessage in discordMessages){ linkedMessages.Add((LinkedDiscordMessage)discordMessage); }
+
+						LoggedMessages.Add(discordChannel, linkedMessages);
+					});
+				}
+			}
+
+			Parallel.Invoke(actions.ToArray());
+			Logger.Info("Discord listener is now ready");
+		}
 
 		private async Task OnClientError(ClientErrorEventArgs e){
 			await Task.Run(()=>{

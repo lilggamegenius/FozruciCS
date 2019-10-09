@@ -50,9 +50,9 @@
         <PackageReference Include="DSharpPlus" Version="3.2.3"/>
         <PackageReference Include="GetOptNet" Version="3.1.4"/>
         <PackageReference Include="Jint" Version="2.11.58"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.1.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.3.1"/>
         <PackageReference Include="Newtonsoft.Json" Version="12.0.2"/>
-        <PackageReference Include="NLog" Version="4.6.5"/>
+        <PackageReference Include="NLog" Version="4.6.7"/>
         <PackageReference Include="SSH.NET" Version="2016.1.0"/>
     </ItemGroup>
     <ItemGroup>
@@ -62,8 +62,14 @@
         <Reference Include="Common.Logging.NLog45, Version=3.4.2.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>..\packages\Common.Logging.NLog45.3.4.2\lib\netstandard2.0\Common.Logging.NLog45.dll</HintPath>
         </Reference>
+        <Reference Include="NStack, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\..\NStack\NStack\bin\Debug\netcoreapp2.0\NStack.dll</HintPath>
+        </Reference>
         <Reference Include="SshConfigParser, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>..\..\Ssh-Config-Parser\SshConfigParser\bin\Release\netstandard2.0\SshConfigParser.dll</HintPath>
+        </Reference>
+        <Reference Include="Terminal.Gui, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\..\gui.cs\Terminal.Gui\bin\Debug\netcoreapp2.0\Terminal.Gui.dll</HintPath>
         </Reference>
     </ItemGroup>
     <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ChatSharp;
 using ChatSharp.Events;
@@ -14,6 +15,7 @@ namespace FozruciCS.Listeners{
 		public Configuration.ServerConfiguration Config;
 		public IrcClient IrcClient;
 		public IrcUser IrcSelf;
+		public Dictionary<LinkedChannel, List<LinkedMessage>> LoggedMessages = new Dictionary<LinkedChannel, List<LinkedMessage>>();
 		public IrcListener(Configuration.ServerConfiguration configServer){
 			Config = configServer;
 			IrcSelf = Config.IrcSelf = new IrcUser(null, Config.NickName, Config.UserName, Config.serverPassword, Config.RealName);
@@ -30,6 +32,16 @@ namespace FozruciCS.Listeners{
 		}
 
 		public void ExitHandler(object sender, EventArgs args){IrcClient.Quit("Shutting down");}
+		public void LogMessage(LinkedChannel channel, LinkedMessage message){
+			if(!LoggedMessages.ContainsKey(channel)){ LoggedMessages.Add(channel, new List<LinkedMessage>()); }
+
+			LoggedMessages[channel].Add(message);
+		}
+		public List<LinkedMessage> GetMessages(LinkedChannel channel){
+			if(!LoggedMessages.ContainsKey(channel)){ return new List<LinkedMessage>(); }
+
+			return LoggedMessages[channel];
+		}
 
 		public async Task<bool> CommandHandler(PrivateMessageEventArgs e){
 			if(e.PrivateMessage.User.Hostmask == IrcSelf.Hostmask){ return false; }

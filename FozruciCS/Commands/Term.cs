@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FozruciCS.Links;
 using FozruciCS.Listeners;
+using FozruciCS.Utils;
 using NLog;
 using NMaier.GetOptNet;
 using Renci.SshNet;
@@ -81,6 +82,8 @@ namespace FozruciCS.Commands{
 
 		public async Task onMessage(IListener listener, IRespondable respondTo, LinkedMessage e){
 			if(!e.message.StartsWith(termChar)){ return; }
+
+			if(!LilGUtil.CheckIfOwner(e)){ return; }
 
 			bool? connected = SshClient?.IsConnected;
 			if((connected == null) ||

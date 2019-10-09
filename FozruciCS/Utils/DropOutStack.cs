@@ -13,6 +13,9 @@ namespace FozruciCS.Utils{
 			return items[top];
 		}
 
-		public T Peek()=>items[top];
+		public T Peek(int i = -1){
+			i = i == -1 ? top : i;
+			return items[i];
+		}
 	}
 }

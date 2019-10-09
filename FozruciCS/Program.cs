@@ -6,9 +6,11 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using FozruciCS.Commands;
 using FozruciCS.Config;
+using FozruciCS.GUI;
 using FozruciCS.Listeners;
 using Newtonsoft.Json;
 using NLog;
+using Terminal.Gui;
 using Timer = System.Timers.Timer;
 
 namespace FozruciCS{
@@ -24,6 +26,7 @@ namespace FozruciCS{
 		private static FileInfo _configFile;
 		private static FileInfo _permissionsFile;
 		public static Configuration Config;
+		public static MainGUI Gui;
 		public static Dictionary<string, Dictionary<string, Dictionary<string, PermissionLevel>>> Permissions =
 			new Dictionary<string, Dictionary<string, Dictionary<string, PermissionLevel>>>();
 		public static Timer saveTimer = new Timer{Interval = 5 * 1000, AutoReset = true, Enabled = true};
@@ -44,6 +47,8 @@ namespace FozruciCS{
 			Serializer.Formatting = Formatting.Indented;
 		}
 		public static long CurrentTimeMillis=>DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+
+		public static void InitGUI()=>Gui = new MainGUI();
 
 		public static int Main(string[] args){
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
@@ -68,6 +73,7 @@ namespace FozruciCS{
 				using(JsonTextReader reader = new JsonTextReader(sr)){
 					Config = Serializer.Deserialize<Configuration>(reader);
 					Array.Sort(Config.CommandPrefixes, (x, y)=>y.Length.CompareTo(x.Length));
+					InitGUI();
 					new Thread(()=>{
 						Config.DiscordListener = new DiscordListener();
 						AppDomain.CurrentDomain.ProcessExit += Config.DiscordListener.ExitHandler;
@@ -97,17 +103,9 @@ namespace FozruciCS{
 					}
 				}
 
-				//Application.Run(new MainForm());
-				bool isExit = false;
-				while(!isExit){
-					Console.Write("> ");
-					string command = Console.ReadLine();
-					isExit = handleCommand(command);
-				}
-
-				//client.Disconnect();
+				Application.Run();
 			} catch(Exception e){
-				Logger.Error(e, "Error starting bot");
+				Logger.Error(e, "Error starting bot: {0}", e);
 				return 1;
 			}
 
@@ -119,11 +117,5 @@ namespace FozruciCS{
 		}
 
 		public static void RegisterCommand(string commandName, ICommand command){CommandList[commandName.ToLower()] = command;}
-
-		private static bool handleCommand(string command){
-			if(command.Equals("exit")){ return true; }
-
-			return false;
-		}
 	}
 }

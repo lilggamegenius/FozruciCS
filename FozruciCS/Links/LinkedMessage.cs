@@ -81,5 +81,16 @@ namespace FozruciCS.Links{
 									 message.Message.MentionedUsers,
 									 message.Message.MentionedChannels,
 									 message.Message.MessageType);
+
+		public static implicit operator LinkedDiscordMessage(DiscordMessage message)=>
+			new LinkedDiscordMessage(new LinkedDiscordUser(message.Author, message.Channel.Guild),
+									 message.Channel,
+									 message.Channel.Guild,
+									 message.Content,
+									 message.Reactions,
+									 message.MentionedRoles,
+									 message.MentionedUsers,
+									 message.MentionedChannels,
+									 message.MessageType);
 	}
 }
