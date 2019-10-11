@@ -22,7 +22,6 @@ namespace FozruciCS.Links{
 			this.server = server;
 			this.message = message;
 			PrivateMessageEventArgs = privateMessageEventArgs;
-			Client = privateMessageEventArgs.PrivateMessage.User.Client;
 		}
 		public override LinkedUser author{get;}
 		public override LinkedChannel channel{get;}
@@ -30,7 +29,7 @@ namespace FozruciCS.Links{
 		public override string message{get;}
 		public PrivateMessageEventArgs PrivateMessageEventArgs{get;}
 
-		public IrcClient Client{get;}
+		public IrcClient Client=>PrivateMessageEventArgs.PrivateMessage.User.Client;
 		public override string ToString()=>$"{author} {message}";
 
 		public static implicit operator LinkedIrcMessage(PrivateMessageEventArgs privateMessageEventArgs){

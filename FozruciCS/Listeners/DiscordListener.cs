@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
@@ -11,6 +11,7 @@ using FozruciCS.Links;
 using FozruciCS.Utils;
 using NLog;
 using LogLevel = DSharpPlus.LogLevel;
+using Timer = System.Timers.Timer;
 
 namespace FozruciCS.Listeners{
 	public class DiscordListener : IListener{
@@ -18,7 +19,7 @@ namespace FozruciCS.Listeners{
 		public static Timer titanusTimer = new Timer{Interval = 10 * 1000, AutoReset = true, Enabled = true};
 		private readonly DiscordClient _client;
 
-		public Dictionary<LinkedChannel, List<LinkedMessage>> LoggedMessages = new Dictionary<LinkedChannel, List<LinkedMessage>>();
+		public Dictionary<string, List<LinkedMessage>> LoggedMessages = new Dictionary<string, List<LinkedMessage>>();
 
 		public bool titanusDown;
 
@@ -76,26 +77,39 @@ namespace FozruciCS.Listeners{
 
 		public async void ExitHandler(object sender, EventArgs args){await _client.DisconnectAsync();}
 		public void LogMessage(LinkedChannel channel, LinkedMessage message){
-			if(!LoggedMessages.ContainsKey(channel)){ LoggedMessages.Add(channel, new List<LinkedMessage>()); }
+			string channelName = channel.name;
+			if(!LoggedMessages.ContainsKey(channelName)){ LoggedMessages[channelName] = new List<LinkedMessage>(); }
 
-			LoggedMessages[channel].Add(message);
+			LoggedMessages[channelName].Add(message);
 		}
 		public async Task<List<LinkedMessage>> GetMessages(LinkedChannel channel){
-			if(LoggedMessages.ContainsKey(channel)){ return LoggedMessages[channel]; }
+			string channelName = channel.name;
+			if(LoggedMessages.ContainsKey(channelName)){ return LoggedMessages[channelName]; }
 
-			List<LinkedMessage> messages = new List<LinkedMessage>();
-			if(channel is LinkedDiscordChannel discordChannel){
-				IReadOnlyList<DiscordMessage> discordMessages = await discordChannel.channel.GetMessagesAsync();
-				for(int i = discordMessages.Count - 1; i >= 0; i--){
-					if(discordMessages[i].MessageType != MessageType.Default){ continue; }
+			bool lockTaken = false;
+			try{
+				Monitor.TryEnter(_client, TimeSpan.Zero, ref lockTaken);
+				if(lockTaken){
+					List<LinkedMessage> messages = new List<LinkedMessage>();
+					if(channel is LinkedDiscordChannel discordChannel){
+						IReadOnlyList<DiscordMessage> discordMessages = await discordChannel.channel.GetMessagesAsync();
+						for(int i = discordMessages.Count - 1; i >= 0; i--){
+							DiscordMessage discordMessage = discordMessages[i];
+							if(discordMessage.MessageType != MessageType.Default){ continue; }
 
-					messages.Add((LinkedDiscordMessage)discordMessages[i]);
+							if(discordMessage.WebhookMessage){ continue; }
+
+							messages.Add((LinkedDiscordMessage)discordMessage);
+						}
+
+						LoggedMessages[discordChannel.name] = messages;
+					}
 				}
-
-				LoggedMessages[discordChannel] = messages;
+			} finally{
+				if(lockTaken){ Monitor.Exit(_client); }
 			}
 
-			return LoggedMessages[channel];
+			return LoggedMessages[channelName];
 		}
 
 		public async Task<bool> CommandHandler(MessageCreateEventArgs e){

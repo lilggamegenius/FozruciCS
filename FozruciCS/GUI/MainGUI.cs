@@ -31,7 +31,7 @@ namespace FozruciCS.GUI{
 
 		public IList messages = new List<string>();
 		public ListView messagesListView;
-		public TextField messagesTextField;
+		public EnterTextField messagesTextField;
 		public Window messagesWin;
 		public ScrollView scrollView;
 		public int selectedChannel;
@@ -138,9 +138,7 @@ namespace FozruciCS.GUI{
 				X = 0,
 				Y = 0,
 				Width = Dim.Fill(),
-				Height = Dim.Fill(1),
-				AllowsMarking = true,
-				CanFocus = true
+				Height = Dim.Fill(1)
 			};
 			TimeSpan periodTimeSpan = TimeSpan.FromSeconds(1);
 			//IList testList = new List<string>(){"Testing"};
@@ -150,17 +148,43 @@ namespace FozruciCS.GUI{
 			Timer = new Timer(e=>{
 								  UpdateServers();
 								  //UpdateChannels();
-								  // UpdateLogs();
+								  UpdateLogs();
 							  },
 							  null,
 							  periodTimeSpan,
 							  periodTimeSpan);
 			messagesWin.Add(messagesListView);
-			messagesTextField = new TextField(""){
+			messagesTextField = new EnterTextField(""){
 				X = 0,
 				Y = Pos.Bottom(messagesListView),
 				Width = Dim.Fill(),
 				Height = 1
+			};
+			messagesTextField.Changed += async (_, __)=>{
+				if(selectedServer == 0){ return; }
+
+				if(LinkedChannels[selectedChannel] is LinkedDiscordChannel discordChannel){ await discordChannel.channel.TriggerTypingAsync(); }
+			};
+			messagesTextField.TextEnter += text=>{
+				if(selectedServer == 0){ return; }
+
+				LinkedServer server = LinkedServers[selectedServer];
+				switch(server){
+					case LinkedIrcServer ircServer:
+						foreach(Configuration.ServerConfiguration serverConfiguration in Program.Config.servers.Values){
+							if(serverConfiguration.IrcClient.ServerInfo != ircServer.IrcServer){ continue; }
+
+							LinkedChannel channel = LinkedChannels[selectedChannel];
+							channel.respond(text);
+							serverConfiguration.IrcListener.LogMessage(channel, new LinkedIrcMessage((LinkedIrcUser)serverConfiguration.IrcSelf, channel, server, text, null));
+							return;
+						}
+
+						break;
+					case LinkedDiscordServer _:
+						LinkedChannels[selectedChannel].respond(text);
+						break;
+				}
 			};
 			messagesWin.Add(messagesTextField);
 			top.SetFocus(messagesTextField);
@@ -193,7 +217,7 @@ namespace FozruciCS.GUI{
 
 			int followTop = messages.Count - messagesListView.Frame.Height;
 			messagesListView.SetSource(messages);
-			if(messages.Count == 0){ return; }
+			if(followTop < 0){ return; }
 
 			if(follow || fullUpdate){
 				messagesListView.SelectedItem = messages.Count - 1;

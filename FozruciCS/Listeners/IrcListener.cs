@@ -15,7 +15,7 @@ namespace FozruciCS.Listeners{
 		public Configuration.ServerConfiguration Config;
 		public IrcClient IrcClient;
 		public IrcUser IrcSelf;
-		public Dictionary<LinkedChannel, List<LinkedMessage>> LoggedMessages = new Dictionary<LinkedChannel, List<LinkedMessage>>();
+		public Dictionary<string, List<LinkedMessage>> LoggedMessages = new Dictionary<string, List<LinkedMessage>>();
 		public IrcListener(Configuration.ServerConfiguration configServer){
 			Config = configServer;
 			IrcSelf = Config.IrcSelf = new IrcUser(null, Config.NickName, Config.UserName, Config.serverPassword, Config.RealName);
@@ -33,14 +33,16 @@ namespace FozruciCS.Listeners{
 
 		public void ExitHandler(object sender, EventArgs args){IrcClient.Quit("Shutting down");}
 		public void LogMessage(LinkedChannel channel, LinkedMessage message){
-			if(!LoggedMessages.ContainsKey(channel)){ LoggedMessages.Add(channel, new List<LinkedMessage>()); }
+			string channelName = channel.name;
+			if(!LoggedMessages.ContainsKey(channelName)){ LoggedMessages[channelName] = new List<LinkedMessage>(); }
 
-			LoggedMessages[channel].Add(message);
+			LoggedMessages[channelName].Add(message);
 		}
 		public async Task<List<LinkedMessage>> GetMessages(LinkedChannel channel){
-			if(!LoggedMessages.ContainsKey(channel)){ return new List<LinkedMessage>(); }
+			string channelName = channel.name;
+			if(!LoggedMessages.ContainsKey(channelName)){ LoggedMessages[channelName] = new List<LinkedMessage>(); }
 
-			return LoggedMessages[channel];
+			return LoggedMessages[channelName];
 		}
 
 		public async Task<bool> CommandHandler(PrivateMessageEventArgs e){
