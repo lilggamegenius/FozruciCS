@@ -80,8 +80,20 @@ namespace FozruciCS.Listeners{
 
 			LoggedMessages[channel].Add(message);
 		}
-		public List<LinkedMessage> GetMessages(LinkedChannel channel){
-			if(!LoggedMessages.ContainsKey(channel)){ return new List<LinkedMessage>(); }
+		public async Task<List<LinkedMessage>> GetMessages(LinkedChannel channel){
+			if(LoggedMessages.ContainsKey(channel)){ return LoggedMessages[channel]; }
+
+			List<LinkedMessage> messages = new List<LinkedMessage>();
+			if(channel is LinkedDiscordChannel discordChannel){
+				IReadOnlyList<DiscordMessage> discordMessages = await discordChannel.channel.GetMessagesAsync();
+				for(int i = discordMessages.Count - 1; i >= 0; i--){
+					if(discordMessages[i].MessageType != MessageType.Default){ continue; }
+
+					messages.Add((LinkedDiscordMessage)discordMessages[i]);
+				}
+
+				LoggedMessages[discordChannel] = messages;
+			}
 
 			return LoggedMessages[channel];
 		}
@@ -169,28 +181,7 @@ namespace FozruciCS.Listeners{
 			LogMessage((LinkedDiscordChannel)e.Channel, (LinkedDiscordMessage)e);
 		}
 
-		private async Task OnClientOnReady(ReadyEventArgs args){
-			List<Action> actions = new List<Action>();
-			foreach(DiscordGuild guild in _client.Guilds.Values){
-				IReadOnlyList<DiscordChannel> channelsList = await guild.GetChannelsAsync();
-				foreach(DiscordChannel channel in channelsList){
-					if(channel.Type != ChannelType.Text){ continue; }
-
-					LinkedDiscordChannel discordChannel = channel;
-					IReadOnlyList<DiscordMessage> messageList = await channel.GetMessagesAsync(20);
-					actions.Add(async ()=>{
-						IReadOnlyList<DiscordMessage> discordMessages = messageList;
-						List<LinkedMessage> linkedMessages = new List<LinkedMessage>();
-						foreach(DiscordMessage discordMessage in discordMessages){ linkedMessages.Add((LinkedDiscordMessage)discordMessage); }
-
-						LoggedMessages.Add(discordChannel, linkedMessages);
-					});
-				}
-			}
-
-			Parallel.Invoke(actions.ToArray());
-			Logger.Info("Discord listener is now ready");
-		}
+		private async Task OnClientOnReady(ReadyEventArgs args)=>Logger.Info("Discord listener is now ready");
 
 		private async Task OnClientError(ClientErrorEventArgs e){
 			await Task.Run(()=>{

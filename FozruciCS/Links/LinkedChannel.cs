@@ -10,6 +10,7 @@ namespace FozruciCS.Links{
 		public abstract string name{get;}
 
 		public abstract Task respond(string message, LinkedUser user = null);
+		public abstract override string ToString();
 	}
 
 	public class LinkedIrcChannel : LinkedChannel{
@@ -21,8 +22,8 @@ namespace FozruciCS.Links{
 
 		public override bool isIrc=>true;
 		public override bool isDiscord=>false;
-
 		public override string name{get;}
+		public override string ToString()=>name;
 
 		public override async Task respond(string message, LinkedUser user = null){
 			await Task.Run(()=>{
@@ -51,8 +52,8 @@ namespace FozruciCS.Links{
 
 		public override bool isIrc=>false;
 		public override bool isDiscord=>true;
-
 		public override string name{get;}
+		public override string ToString()=>$"#{name}";
 
 		public override async Task respond(string message, LinkedUser user = null){
 			await channel.SendMessageAsync($"{(user != null ? $"{((LinkedDiscordUser)user).DiscordMember.Mention}: " : "")}{message}");

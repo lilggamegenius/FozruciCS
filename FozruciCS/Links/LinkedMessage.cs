@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Text;
 using ChatSharp;
 using ChatSharp.Events;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using FozruciCS.Utils;
 
 namespace FozruciCS.Links{
 	public abstract class LinkedMessage{
@@ -10,6 +12,7 @@ namespace FozruciCS.Links{
 		public abstract LinkedChannel channel{get;}
 		public abstract LinkedServer server{get;}
 		public abstract string message{get;}
+		public abstract override string ToString();
 	}
 
 	public class LinkedIrcMessage : LinkedMessage{
@@ -28,6 +31,7 @@ namespace FozruciCS.Links{
 		public PrivateMessageEventArgs PrivateMessageEventArgs{get;}
 
 		public IrcClient Client{get;}
+		public override string ToString()=>$"{author} {message}";
 
 		public static implicit operator LinkedIrcMessage(PrivateMessageEventArgs privateMessageEventArgs){
 			PrivateMessage privateMessage = privateMessageEventArgs.PrivateMessage;
@@ -42,55 +46,49 @@ namespace FozruciCS.Links{
 	}
 
 	public class LinkedDiscordMessage : LinkedMessage{
+		public DiscordMessage discordMessage;
 		public LinkedDiscordMessage(LinkedDiscordUser author,
 									LinkedDiscordChannel channel,
 									LinkedDiscordServer server,
-									string message,
-									IReadOnlyList<DiscordReaction> reactions,
-									IReadOnlyList<DiscordRole> mentionedRoles,
-									IReadOnlyList<DiscordUser> mentionedUsers,
-									IReadOnlyList<DiscordChannel> mentionedChannels,
-									MessageType? messageType){
+									DiscordMessage discordMessage){
 			this.author = author;
 			this.channel = channel;
 			this.server = server;
-			this.message = message;
-			Reactions = reactions;
-			MentionedRoles = mentionedRoles;
-			MentionedUsers = mentionedUsers;
-			MentionedChannels = mentionedChannels;
-			MessageType = messageType;
+			this.discordMessage = discordMessage;
 		}
 		public override LinkedUser author{get;}
 		public override LinkedChannel channel{get;}
 		public override LinkedServer server{get;}
-		public override string message{get;}
-		public IReadOnlyList<DiscordReaction> Reactions{get;}
-		public IReadOnlyList<DiscordRole> MentionedRoles{get;}
-		public IReadOnlyList<DiscordUser> MentionedUsers{get;}
-		public IReadOnlyList<DiscordChannel> MentionedChannels{get;}
-		public MessageType? MessageType{get;}
+		public IReadOnlyList<DiscordReaction> Reactions=>discordMessage.Reactions;
+		public IReadOnlyList<DiscordRole> MentionedRoles=>discordMessage.MentionedRoles;
+		public IReadOnlyList<DiscordUser> MentionedUsers=>discordMessage.MentionedUsers;
+		public IReadOnlyList<DiscordChannel> MentionedChannels=>discordMessage.MentionedChannels;
+		public MessageType? MessageType=>discordMessage.MessageType;
+		public override string message{
+			get{
+				// ReSharper disable once LocalVariableHidesMember
+				string message = discordMessage.Content;
+				IReadOnlyList<DiscordAttachment> attachments = discordMessage.Attachments;
+				if(attachments.Count == 0){ return message; }
+
+				StringBuilder builder = new StringBuilder(message);
+				foreach(DiscordAttachment attachment in attachments){ builder.Append(attachment.Url).Append(" "); }
+
+				return builder.ToString();
+			}
+		}
+		public override string ToString()=>$"{author} {message.SanitizeForIRC().StripEmojis()}";
 
 		public static implicit operator LinkedDiscordMessage(MessageCreateEventArgs message)=>
 			new LinkedDiscordMessage(new LinkedDiscordUser(message.Message.Author, message.Guild),
 									 message.Message.Channel,
 									 message.Guild,
-									 message.Message.Content,
-									 message.Message.Reactions,
-									 message.Message.MentionedRoles,
-									 message.Message.MentionedUsers,
-									 message.Message.MentionedChannels,
-									 message.Message.MessageType);
+									 message.Message);
 
 		public static implicit operator LinkedDiscordMessage(DiscordMessage message)=>
 			new LinkedDiscordMessage(new LinkedDiscordUser(message.Author, message.Channel.Guild),
 									 message.Channel,
 									 message.Channel.Guild,
-									 message.Content,
-									 message.Reactions,
-									 message.MentionedRoles,
-									 message.MentionedUsers,
-									 message.MentionedChannels,
-									 message.MessageType);
+									 message);
 	}
 }

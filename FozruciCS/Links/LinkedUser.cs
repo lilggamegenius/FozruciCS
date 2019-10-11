@@ -9,8 +9,10 @@ namespace FozruciCS.Links{
 		public abstract string nick{get;}
 		public abstract string username{get;}
 		public abstract string id{get;}
+		public string hostmask=>$"{nick}!{username}@{id}";
 
 		public abstract Task respond(string message, LinkedUser user = null);
+		public override string ToString()=>$"<{hostmask}>";
 	}
 
 	public class LinkedIrcUser : LinkedUser{

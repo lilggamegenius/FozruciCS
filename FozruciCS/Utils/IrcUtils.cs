@@ -79,6 +79,11 @@ namespace FozruciCS.Utils{
 			return null;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string SanitizeForIRC(this string str)=>str.Replace(BellChar, SymbolForBellChar)
+																 .Replace(NewLineChar, SymbolForNewLineChar)
+																 .Replace(CharageReturnChar, SymbolForCharageReturnChar)
+																 .Replace("\0", string.Empty);
 		public static bool MatchHostMask(this string hostmask, string pattern){
 			string nick = hostmask.Substring(0, hostmask.IndexOf("!", StringComparison.Ordinal));
 			string userName = hostmask.Substring(hostmask.IndexOf("!", StringComparison.Ordinal) + 1, hostmask.IndexOf("@", StringComparison.Ordinal));

@@ -2,11 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using ChatSharp;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using FozruciCS.Config;
 using FozruciCS.Links;
+using FozruciCS.Utils;
 using NLog;
 using NLog.Targets;
 using Terminal.Gui;
@@ -91,19 +93,36 @@ namespace FozruciCS.GUI{
 				CanFocus = true
 			};
 			serverListView.SelectedChanged += ()=>{
-				if(serverListView.SelectedItem == selectedServer){ return; }
+				for(int i = 0; i < servers.Count; i++){
+					if(serverListView.Source.IsMarked(i)){
+						if(selectedServer != i){
+							selectedServer = i;
+							for(int i2 = 0; i2 < servers.Count; i2++){
+								bool mark = selectedServer == i2;
+								serverListView.Source.SetMark(i2, mark);
+							}
 
-				selectedServer = serverListView.SelectedItem;
-				UpdateChannels();
-				if(chanListView.Source.Count == 0){ return; }
-
-				chanListView.SelectedItem = 0;
+							UpdateChannels();
+							return;
+						}
+					}
+				}
 			};
 			chanListView.SelectedChanged += ()=>{
-				if(chanListView.SelectedItem == selectedChannel){ return; }
+				for(int i = 0; i < channels.Count; i++){
+					if(chanListView.Source.IsMarked(i)){
+						if(selectedChannel != i){
+							selectedChannel = i;
+							for(int i2 = 0; i2 < channels.Count; i2++){
+								bool mark = selectedChannel == i2;
+								chanListView.Source.SetMark(i2, mark);
+							}
 
-				selectedChannel = chanListView.SelectedItem;
-				UpdateChannels();
+							UpdateLogs();
+							return;
+						}
+					}
+				}
 			};
 			chanListWin.Add(serverListView);
 			chanListWin.Add(chanListView);
@@ -131,7 +150,7 @@ namespace FozruciCS.GUI{
 			Timer = new Timer(e=>{
 								  UpdateServers();
 								  //UpdateChannels();
-								  UpdateLogs();
+								  // UpdateLogs();
 							  },
 							  null,
 							  periodTimeSpan,
@@ -149,7 +168,7 @@ namespace FozruciCS.GUI{
 			Colors.Base.Normal = Attribute.Make(Color.Red, Color.Black);
 		}
 
-		public void UpdateLogs(bool fullUpdate = false){
+		public async Task UpdateLogs(bool fullUpdate = false){
 			int selectedItem = messagesListView.SelectedItem;
 			int topItem = messagesListView.TopItem;
 			//var follow = selectedItem == messages.Count - 1;
@@ -158,11 +177,24 @@ namespace FozruciCS.GUI{
 				messages = (IList)Target.Logs;
 			} else{
 				LinkedServer server = LinkedServers[selectedServer];
-				if(server is LinkedIrcServer){} else if(server is LinkedDiscordServer){}
+				if(server is LinkedIrcServer){
+					LinkedIrcServer ircServer = (LinkedIrcServer)server;
+					foreach(Configuration.ServerConfiguration serverConfiguration in Program.Config.servers.Values){
+						if(serverConfiguration.IrcClient.ServerInfo != ircServer.IrcServer){ continue; }
+
+						messages = await serverConfiguration.IrcListener.GetMessages(LinkedChannels[selectedChannel]);
+						break;
+					}
+				} else if(server is LinkedDiscordServer){
+					LinkedChannel channel = LinkedChannels[selectedChannel];
+					messages = await Program.Config.DiscordListener.GetMessages(channel);
+				}
 			}
 
 			int followTop = messages.Count - messagesListView.Frame.Height;
 			messagesListView.SetSource(messages);
+			if(messages.Count == 0){ return; }
+
 			if(follow || fullUpdate){
 				messagesListView.SelectedItem = messages.Count - 1;
 				messagesListView.TopItem = followTop;
@@ -170,6 +202,8 @@ namespace FozruciCS.GUI{
 				messagesListView.SelectedItem = selectedItem;
 				messagesListView.TopItem = topItem;
 			}
+
+			Application.Top.ChildNeedsDisplay();
 		}
 
 		public void UpdateServers(){
@@ -179,7 +213,10 @@ namespace FozruciCS.GUI{
 			List<string> serverList = new List<string>{"Info Logs"};
 			List<LinkedServer> linkedServers = new List<LinkedServer>{null};
 			foreach(DiscordGuild guild in Program.Config.DiscordSocketClient.Guilds.Values){
-				serverList.Add($"Discord - {guild.Name}");
+				string guildName = guild.Name;
+				if(string.IsNullOrWhiteSpace(guildName)){ return; }
+
+				serverList.Add($"Discord - {guildName}");
 				linkedServers.Add((LinkedDiscordServer)guild);
 			}
 
@@ -189,11 +226,16 @@ namespace FozruciCS.GUI{
 				linkedServers.Add((LinkedIrcServer)serverInfo);
 			}
 
+			if(servers.Count == serverList.Count){ return; }
+
 			int selectedItem = serverListView.SelectedItem;
+			//int markedItem = serverListView;
 			servers = serverList;
 			LinkedServers = linkedServers;
 			serverListView.SetSource(servers);
 			if(servers.Count < selectedItem){ serverListView.SelectedItem = selectedItem; }
+
+			UpdateChannels();
 		}
 
 		public void UpdateChannels(){
@@ -201,9 +243,8 @@ namespace FozruciCS.GUI{
 			   (Program.Config.servers.Count       == 0)){ return; }
 
 			//messages = new List<string>();
-			channels = new List<string>();
-			chanListView.SetSource(channels);
-			LinkedChannels = new List<LinkedChannel>();
+			List<string> channelList = new List<string>();
+			List<LinkedChannel> linkedChannelList = new List<LinkedChannel>();
 			if(selectedServer == 0){
 				selectedChannel = 0;
 				return;
@@ -215,8 +256,8 @@ namespace FozruciCS.GUI{
 				foreach(DiscordChannel channel in server.DiscordGuild.Channels){
 					if(channel.Type != ChannelType.Text){ continue; }
 
-					channels.Add(channel.Name);
-					LinkedChannels.Add((LinkedDiscordChannel)channel);
+					channelList.Add("#" + channel.Name.StripEmojis());
+					linkedChannelList.Add((LinkedDiscordChannel)channel);
 				}
 			}
 
@@ -226,11 +267,18 @@ namespace FozruciCS.GUI{
 					if(serverConfiguration.IrcClient.ServerInfo != server.IrcServer){ continue; }
 
 					foreach(IrcChannel channel in serverConfiguration.IrcClient.Channels){
-						channels.Add(channel.Name);
-						LinkedChannels.Add((LinkedIrcChannel)channel);
+						channelList.Add(channel.Name);
+						linkedChannelList.Add((LinkedIrcChannel)channel);
 					}
 				}
 			}
+
+			if(channelList.Count == channels.Count){ return; }
+
+			channels = channelList;
+			LinkedChannels = linkedChannelList;
+			chanListView.SetSource(channels);
+			UpdateLogs();
 		}
 	}
 }

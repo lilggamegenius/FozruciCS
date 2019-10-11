@@ -351,5 +351,15 @@ namespace FozruciCS.Utils{
 
 			return containedUrls;
 		}
+
+		public static string StripEmojis(this string str){
+			foreach(char a in str){
+				byte[] bts = Encoding.UTF32.GetBytes(a.ToString());
+				if((bts[0].ToString() == "253") &&
+				   (bts[1].ToString() == "255")){ str = str.Replace(a.ToString(), string.Empty); }
+			}
+
+			return str;
+		}
 	}
 }

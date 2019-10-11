@@ -37,7 +37,7 @@ namespace FozruciCS.Listeners{
 
 			LoggedMessages[channel].Add(message);
 		}
-		public List<LinkedMessage> GetMessages(LinkedChannel channel){
+		public async Task<List<LinkedMessage>> GetMessages(LinkedChannel channel){
 			if(!LoggedMessages.ContainsKey(channel)){ return new List<LinkedMessage>(); }
 
 			return LoggedMessages[channel];
@@ -106,8 +106,11 @@ namespace FozruciCS.Listeners{
 			return false;
 		}
 		private async void OnChannelMessageRecieved(PrivateMessageEventArgs e){
+			LinkedIrcChannel channel = e.PrivateMessage.Channel;
+			LinkedIrcMessage message = e;
+			LogMessage(channel, message);
 			bool isCommand = await CommandHandler(e);
-			if(!isCommand){ await Program.CommandList.message(this, (LinkedIrcChannel)e.PrivateMessage.Channel, (LinkedIrcMessage)e); }
+			if(!isCommand){ await Program.CommandList.message(this, channel, message); }
 
 			Logger.Info("{0} from {1} by {2}: {3}",
 						isCommand ? "Command" : "Message",
