@@ -49,6 +49,7 @@
     <ItemGroup>
         <PackageReference Include="DSharpPlus" Version="3.2.3"/>
         <PackageReference Include="GetOptNet" Version="3.1.4"/>
+        <PackageReference Include="GoogleTranslateFreeApi" Version="1.1.1"/>
         <PackageReference Include="Jint" Version="2.11.58"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.3.1"/>
         <PackageReference Include="Newtonsoft.Json" Version="12.0.2"/>

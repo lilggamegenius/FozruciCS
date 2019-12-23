@@ -1,20 +1,18 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using ChatSharp;
-using DSharpPlus;
-using DSharpPlus.Entities;
-using FozruciCS.Config;
-using FozruciCS.Links;
-using FozruciCS.Utils;
-using NLog;
-using NLog.Targets;
-using Terminal.Gui;
-using Attribute = Terminal.Gui.Attribute;
-
 namespace FozruciCS.GUI{
+	using System.Collections;
+	using System.Collections.Generic;
+	using System.Threading.Tasks;
+	using ChatSharp;
+	using DSharpPlus;
+	using DSharpPlus.Entities;
+	using FozruciCS.Config;
+	using FozruciCS.Links;
+	using FozruciCS.Utils;
+	using NLog;
+	using NLog.Targets;
+	using NStack;
+	using Terminal.Gui;
+
 	public class MainGUI{
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		private static readonly MemoryTarget Target = LogManager.Configuration.FindTargetByName<MemoryTarget>("stream");
@@ -39,8 +37,6 @@ namespace FozruciCS.GUI{
 		public ListView serverListView;
 		public IList servers = new List<string>();
 
-		private Timer Timer;
-
 		public MainGUI(){
 			Application.Init();
 			Toplevel top = Application.Top;
@@ -51,7 +47,9 @@ namespace FozruciCS.GUI{
 								new[]{
 									new MenuItem("_Quit",
 												 "",
-												 ()=>{top.Running = false;}),
+												 ()=>{
+													 top.Running = false;
+												 }),
 									new MenuItem("_Save",
 												 "",
 												 ()=>{ /*Todo*/
@@ -140,19 +138,8 @@ namespace FozruciCS.GUI{
 				Width = Dim.Fill(),
 				Height = Dim.Fill(1)
 			};
-			TimeSpan periodTimeSpan = TimeSpan.FromSeconds(1);
-			//IList testList = new List<string>(){"Testing"};
-			//messagesListView.SetSource(testList);
-
-			//messagesListView.SetSource((IList)Target.Logs);
-			Timer = new Timer(e=>{
-								  UpdateServers();
-								  //UpdateChannels();
-								  UpdateLogs();
-							  },
-							  null,
-							  periodTimeSpan,
-							  periodTimeSpan);
+			//TimeSpan periodTimeSpan = TimeSpan.FromMilliseconds(200);
+			Application.MainLoop.AddIdle(UpdateData);
 			messagesWin.Add(messagesListView);
 			messagesTextField = new EnterTextField(""){
 				X = 0,
@@ -161,35 +148,72 @@ namespace FozruciCS.GUI{
 				Height = 1
 			};
 			messagesTextField.Changed += async (_, __)=>{
-				if(selectedServer == 0){ return; }
+				if(selectedServer == 0){
+					return;
+				}
 
-				if(LinkedChannels[selectedChannel] is LinkedDiscordChannel discordChannel){ await discordChannel.channel.TriggerTypingAsync(); }
-			};
-			messagesTextField.TextEnter += text=>{
-				if(selectedServer == 0){ return; }
+				if(messagesTextField.Text.IsEmpty){
+					return;
+				}
 
-				LinkedServer server = LinkedServers[selectedServer];
-				switch(server){
-					case LinkedIrcServer ircServer:
-						foreach(Configuration.ServerConfiguration serverConfiguration in Program.Config.servers.Values){
-							if(serverConfiguration.IrcClient.ServerInfo != ircServer.IrcServer){ continue; }
-
-							LinkedChannel channel = LinkedChannels[selectedChannel];
-							channel.respond(text);
-							serverConfiguration.IrcListener.LogMessage(channel, new LinkedIrcMessage((LinkedIrcUser)serverConfiguration.IrcSelf, channel, server, text, null));
-							return;
-						}
-
-						break;
-					case LinkedDiscordServer _:
-						LinkedChannels[selectedChannel].respond(text);
-						break;
+				if(LinkedChannels[selectedChannel] is LinkedDiscordChannel linkedDiscordChannel){
+					DiscordChannel discordChannel = linkedDiscordChannel;
+					if((discordChannel.PermissionsFor(discordChannel.Guild.CurrentMember) & Permissions.SendMessages) != 0){
+						await discordChannel.TriggerTypingAsync();
+					}
+					else{
+						messagesTextField.Text = ustring.Empty;
+					}
 				}
 			};
+			messagesTextField.TextEnter += OnMessage;
 			messagesWin.Add(messagesTextField);
 			top.SetFocus(messagesTextField);
 			Colors.Base.Focus = Attribute.Make(Color.Black, Color.BrightRed);
 			Colors.Base.Normal = Attribute.Make(Color.Red, Color.Black);
+		}
+		private bool UpdateData(){
+			UpdateServers();
+			//UpdateChannels();
+			UpdateLogs();
+			return true;
+		}
+		private void OnMessage(string text){
+			if(selectedServer == 0){
+				return;
+			}
+
+			LinkedChannel channel = LinkedChannels[selectedChannel];
+			channel.respond(text);
+			LinkedServer server = LinkedServers[selectedServer];
+			if(server is LinkedIrcServer ircServer){
+				foreach(Configuration.ServerConfiguration serverConfiguration in Program.Config.servers.Values){
+					if(serverConfiguration.IrcClient.ServerInfo != ircServer.IrcServer){
+						continue;
+					}
+
+					serverConfiguration.IrcListener.LogMessage(channel, new LinkedIrcMessage((LinkedIrcUser)serverConfiguration.IrcSelf, channel, server, text, null));
+					return;
+				}
+			}
+		}
+
+		private bool CommandHandler(ref string text){
+			const char commandChar = '/';
+			if(text.Length <= 1){
+				return false; // check if this can even be a command
+			}
+
+			if(text[0] != commandChar){
+				return false;
+			} // Check if this is a command
+
+			text = text.Substring(1);
+			if(text[0] == commandChar){
+				return false;
+			}
+
+			return true;
 		}
 
 		public async Task UpdateLogs(bool fullUpdate = false){
@@ -199,46 +223,59 @@ namespace FozruciCS.GUI{
 			bool follow = true;
 			if(selectedServer == 0){ // Info logs are always 0
 				messages = (IList)Target.Logs;
-			} else{
+			}
+			else{
 				LinkedServer server = LinkedServers[selectedServer];
 				if(server is LinkedIrcServer){
-					LinkedIrcServer ircServer = (LinkedIrcServer)server;
+					var ircServer = (LinkedIrcServer)server;
 					foreach(Configuration.ServerConfiguration serverConfiguration in Program.Config.servers.Values){
-						if(serverConfiguration.IrcClient.ServerInfo != ircServer.IrcServer){ continue; }
+						if(serverConfiguration.IrcClient.ServerInfo != ircServer.IrcServer){
+							continue;
+						}
 
 						messages = await serverConfiguration.IrcListener.GetMessages(LinkedChannels[selectedChannel]);
 						break;
 					}
-				} else if(server is LinkedDiscordServer){
-					LinkedChannel channel = LinkedChannels[selectedChannel];
-					messages = await Program.Config.DiscordListener.GetMessages(channel);
+				}
+				else{
+					if(server is LinkedDiscordServer){
+						LinkedChannel channel = LinkedChannels[selectedChannel];
+						messages = await Program.Config.DiscordListener.GetMessages(channel);
+					}
 				}
 			}
 
 			int followTop = messages.Count - messagesListView.Frame.Height;
 			messagesListView.SetSource(messages);
-			if(followTop < 0){ return; }
+			if(followTop < 0){
+				return;
+			}
 
 			if(follow || fullUpdate){
 				messagesListView.SelectedItem = messages.Count - 1;
 				messagesListView.TopItem = followTop;
-			} else{
+			}
+			else{
 				messagesListView.SelectedItem = selectedItem;
 				messagesListView.TopItem = topItem;
 			}
 
-			Application.Top.ChildNeedsDisplay();
+			Application.MainLoop.Driver.Wakeup();
 		}
 
 		public void UpdateServers(){
 			if((Program.Config.DiscordSocketClient == null) ||
-			   (Program.Config.servers.Count       == 0)){ return; }
+			   (Program.Config.servers.Count       == 0)){
+				return;
+			}
 
 			List<string> serverList = new List<string>{"Info Logs"};
 			List<LinkedServer> linkedServers = new List<LinkedServer>{null};
 			foreach(DiscordGuild guild in Program.Config.DiscordSocketClient.Guilds.Values){
 				string guildName = guild.Name;
-				if(string.IsNullOrWhiteSpace(guildName)){ return; }
+				if(string.IsNullOrWhiteSpace(guildName)){
+					return;
+				}
 
 				serverList.Add($"Discord - {guildName}");
 				linkedServers.Add((LinkedDiscordServer)guild);
@@ -250,35 +287,46 @@ namespace FozruciCS.GUI{
 				linkedServers.Add((LinkedIrcServer)serverInfo);
 			}
 
-			if(servers.Count == serverList.Count){ return; }
+			if(servers.Count == serverList.Count){
+				return;
+			}
 
 			int selectedItem = serverListView.SelectedItem;
 			//int markedItem = serverListView;
 			servers = serverList;
 			LinkedServers = linkedServers;
 			serverListView.SetSource(servers);
-			if(servers.Count < selectedItem){ serverListView.SelectedItem = selectedItem; }
+			if(servers.Count < selectedItem){
+				serverListView.SelectedItem = selectedItem;
+			}
 
 			UpdateChannels();
 		}
 
 		public void UpdateChannels(){
 			if((Program.Config.DiscordSocketClient == null) ||
-			   (Program.Config.servers.Count       == 0)){ return; }
+			   (Program.Config.servers.Count       == 0)){
+				return;
+			}
 
 			//messages = new List<string>();
 			List<string> channelList = new List<string>();
 			List<LinkedChannel> linkedChannelList = new List<LinkedChannel>();
 			if(selectedServer == 0){
 				selectedChannel = 0;
+				channels = channelList;
+				LinkedChannels = linkedChannelList;
+				chanListView.SetSource(channels);
 				return;
 			}
 
 			LinkedServer linkedServer = LinkedServers[selectedServer];
 			if(linkedServer.isDiscord){
-				LinkedDiscordServer server = (LinkedDiscordServer)linkedServer;
+				var server = (LinkedDiscordServer)linkedServer;
 				foreach(DiscordChannel channel in server.DiscordGuild.Channels){
-					if(channel.Type != ChannelType.Text){ continue; }
+					if(channel.Type != ChannelType.Text){
+						continue;
+					}
 
 					channelList.Add("#" + channel.Name.StripEmojis());
 					linkedChannelList.Add((LinkedDiscordChannel)channel);
@@ -286,9 +334,11 @@ namespace FozruciCS.GUI{
 			}
 
 			if(linkedServer.isIrc){
-				LinkedIrcServer server = (LinkedIrcServer)linkedServer;
+				var server = (LinkedIrcServer)linkedServer;
 				foreach(Configuration.ServerConfiguration serverConfiguration in Program.Config.servers.Values){
-					if(serverConfiguration.IrcClient.ServerInfo != server.IrcServer){ continue; }
+					if(serverConfiguration.IrcClient.ServerInfo != server.IrcServer){
+						continue;
+					}
 
 					foreach(IrcChannel channel in serverConfiguration.IrcClient.Channels){
 						channelList.Add(channel.Name);
@@ -297,7 +347,9 @@ namespace FozruciCS.GUI{
 				}
 			}
 
-			if(channelList.Count == channels.Count){ return; }
+			if(channelList.Count == channels.Count){
+				return;
+			}
 
 			channels = channelList;
 			LinkedChannels = linkedChannelList;
